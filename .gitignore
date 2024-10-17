@@ -1,0 +1,6 @@
+venv
+skeleton_project/skeleton_project/__pycache__
+skeleton_project/dynamictable/__pycache__
+skeleton_project/dynamictable/migrations/__pycache__
+skeleton_project/core/__pycache__
+skeleton_project/core/migrations/__pycache__

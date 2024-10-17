@@ -1,0 +1,18 @@
+<h2>{{ name }}</h2>
+<p>{{ description }}</p>
+<table class="table">
+    <thead>
+        {% for col in columns_names %}
+            <th>{{ col }}</th>
+        {% endfor %}
+    </thead>
+    <tbody>
+        {% for row in rows %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
