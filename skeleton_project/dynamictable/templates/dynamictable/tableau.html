@@ -5,6 +5,7 @@
         {% for col in columns_names %}
             <th>{{ col }}</th>
         {% endfor %}
+        <th><button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" class="bg-blue-500 text-white p-2">+</button></th>
     </thead>
     <tbody>
         {% for row in rows %}
@@ -14,5 +15,8 @@
                 {% endfor %}
             </tr>
         {% endfor %}
+        <tr>
+            <td><button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" class="bg-blue-500 text-white p-2">+</button></td>
+        </tr>
     </tbody>
 </table>

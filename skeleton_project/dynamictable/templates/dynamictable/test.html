@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Table with Alpine.js and Sortable.js</title>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js"></script>
+    <!-- Sortable.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        th.movable {
+            cursor: move;
+        }
+        .add-button {
+            margin: 10px 0;
+            padding: 5px 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div x-data="tableData" x-init="initSortable">
+    <button class="add-button" @click="addRow">Ajouter une ligne</button>
+    <button class="add-button" @click="addColumn">Ajouter une colonne</button>
+
+    <table>
+        <!-- Header -->
+        <thead>
+            <tr id="table-header">
+                <template x-for="(col, index) in table.columns" :key="index">
+                    <th class="movable" :data-index="index">
+                        <div x-html="col.name"></div>
+                    </th>
+                </template>
+            </tr>
+        </thead>
+
+        <!-- Body -->
+        <tbody>
+            <template x-for="(row, idx) in table.data" :key="idx">
+                <tr>
+                    <template x-for="(col, icol) in row" :key="icol">
+                        <td>
+                            <input type="text" x-model="col.value" class="px-3 border-b border-gray-200">
+                        </td>
+                    </template>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('tableData', () => ({
+            table: {
+                columns: [
+                    { name: 'City' },
+                    { name: 'Trousers' },
+                    { name: 'Skirts' },
+                    { name: 'Dresses' },
+                    { name: 'Bracelets' },
+                    { name: 'Rings' }
+                ],
+                data: [
+                    [{ value: "Mandalay" }, { value: 79 }, { value: 16 }, { value: 14 }, { value: 69 }, { value: 99 }],
+                    [{ value: "George Town" }, { value: 68 }, { value: 24 }, { value: 90 }, { value: 96 }, { value: 48 }],
+                    [{ value: "Gent" }, { value: 26 }, { value: 60 }, { value: 67 }, { value: 5 }, { value: 43 }],
+                    [{ value: "Mombasa" }, { value: 34 }, { value: 62 }, { value: 18 }, { value: 75 }, { value: 78 }],
+                    [{ value: "Lyon" }, { value: 13 }, { value: 33 }, { value: 12 }, { value: 0 }, { value: 17 }],
+                    [{ value: "Vancouver" }, { value: 82 }, { value: 91 }, { value: 18 }, { value: 96 }, { value: 72 }],
+                    [{ value: "Cairn" }, { value: 64 }, { value: 43 }, { value: 14 }, { value: 95 }, { value: 55 }]
+                ]
+            },
+
+            initSortable() {
+                let header = document.getElementById("table-header");
+
+                Sortable.create(header, {
+                    animation: 100,
+                    swapThreshold: 0.5,
+                    onEnd: (event) => {
+                        let fromIndex = event.oldIndex;
+                        let toIndex = event.newIndex;
+
+                        if (fromIndex !== toIndex) {
+
+                            // Déplace les données de chaque ligne en même temps
+                            this.table.data.forEach(row => {
+                                this.moveArrayElement(row, fromIndex, toIndex);
+                            });
+                        }
+                    }
+                });
+            },
+
+            addRow() {
+                // Ajoute une nouvelle ligne vide
+                let newRow = this.table.columns.map(() => ({ value: '' }));
+                this.table.data.push(newRow);
+            },
+
+            addColumn() {
+                // Ajoute une nouvelle colonne
+                const newColumnName = `Column ${this.table.columns.length + 1}`;
+                this.table.columns.push({ name: newColumnName });
+
+                // Remplit la colonne avec des valeurs vides pour chaque ligne existante
+                this.table.data.forEach(row => row.push({ value: '' }));
+            },
+
+            moveArrayElement(arr, fromIndex, toIndex) {
+                const element = arr.splice(fromIndex, 1)[0];
+                arr.splice(toIndex, 0, element);
+            }
+        }));
+    });
+</script>
+
+</body>
+</html>

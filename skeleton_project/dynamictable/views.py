@@ -37,3 +37,9 @@ def get_dynamic_table_html(request, table_id):
         return render(request, 'dynamictable/tableau.html', context)
     except DynamicTable.DoesNotExist:
         return HttpResponse("Tableau non trouvé", status=404)
+
+def add_row_dynamic_table(request, tabled_id):
+    pass
+
+def add_row_dynamic_table(request, tabled_id):
+    pass
