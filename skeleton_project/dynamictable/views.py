@@ -57,9 +57,11 @@ def update_cell(request, cell_id):
 
         # Utiliser parse_qs pour analyser les données encodées en 'application/x-www-form-urlencoded'
         data = urllib.parse.parse_qs(body)
+        print(data)
 
         # Récupérer la valeur de la clé 'cell_id'
         new_value = data.get(str(cell_id), [None])[0]  # Si 'cell_id' n'existe pas, retourner None
+        print(new_value)
         
         if new_value:
             # Traitement de la valeur, ici mise à jour de la cellule par exemple

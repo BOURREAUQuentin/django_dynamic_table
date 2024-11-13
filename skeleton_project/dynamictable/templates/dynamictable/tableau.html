@@ -17,10 +17,22 @@
                 {% for cell in row %}
                     <td>
                         {% if cell.type == 'date' %}
-                            <input  type="date" 
+                            <input  type="date"
+                                    name="{{ cell.cel_id }}"
                                     value="{{ cell.value }}"
                                     hx-put="{% url 'dynamictable:update_cell' cell.cel_id %}"
                                     hx-trigger="change"
+                                    hx-headers='{"Content-Type": "application/json"}'
+                                    hx-vals='{"new_value": this.value}'
+                                    class="border p-1">
+                        {% elif cell.type == 'integer' %}
+                            <input  type="number"
+                                    name="{{ cell.cel_id }}"
+                                    value="{{ cell.value }}"
+                                    hx-put="{% url 'dynamictable:update_cell' cell.cel_id %}"
+                                    hx-trigger="change"
+                                    hx-headers='{"Content-Type": "application/json"}'
+                                    hx-vals='{"new_value": this.value}'
                                     class="border p-1">
                         {% else %}
                             <input  type="text"
