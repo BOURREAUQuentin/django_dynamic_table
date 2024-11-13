@@ -49,35 +49,27 @@ def get_dynamic_table_html(request, table_id):
     except DynamicTable.DoesNotExist:
         return HttpResponse("Tableau non trouvé", status=404)
 
-@csrf_exempt  # Désactive CSRF pour les tests locaux. Pense à le retirer en production ou à configurer un token CSRF.
+@csrf_exempt # désactive CSRF pour les tests locaux. Pense à le retirer en production ou à configurer un token CSRF.
 def update_cell(request, cell_id):
-    if request.method == "PUT":
-        # Décoder le corps de la requête en chaîne de caractères
-        body = request.body.decode('utf-8')  # Décoder en 'utf-8'
+    if request.method == "POST":
+        try:
+            # récupére la nouvelle valeur depuis les données envoyées par le formulaire
+            new_value = request.POST.get('new_value')
 
-        # Utiliser parse_qs pour analyser les données encodées en 'application/x-www-form-urlencoded'
-        data = urllib.parse.parse_qs(body)
-        print(data)
-
-        # Récupérer la valeur de la clé 'cell_id'
-        new_value = data.get(str(cell_id), [None])[0]  # Si 'cell_id' n'existe pas, retourner None
-        print(new_value)
-        
-        if new_value:
-            # Traitement de la valeur, ici mise à jour de la cellule par exemple
-            try:
-                # Imaginons que tu mets à jour une cellule avec cette valeur
-                cell = Cell.objects.get(pk=cell_id)
-                cell.CEL_VALUE = new_value
-                cell.save()
-
+            if new_value is not None:
+                cell = Cell.objects.get(pk=cell_id) # récupérer la cellule avec l'id donné
+                cell.CEL_VALUE = new_value # mise à jour de la valeur de la cellule
+                cell.save() # sauvegarde la cellule en BD
                 return JsonResponse({"status": "success", "new_value": new_value})
-            except Cell.DoesNotExist:
-                return JsonResponse({"status": "error", "message": "Cell not found"}, status=404)
-        else:
-            return JsonResponse({"status": "error", "message": "Missing new_value"}, status=400)
-    else:
-        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
+            else:
+                return JsonResponse({"status": "error", "message": "Missing new_value"}, status=400)
+
+        except Cell.DoesNotExist:
+            return JsonResponse({"status": "error", "message": "Cell not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
 
 def add_row(request, table_id):
     table = DynamicTable.objects.get(TAB_ID=table_id)
