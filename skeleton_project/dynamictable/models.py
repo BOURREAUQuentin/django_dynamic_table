@@ -64,6 +64,65 @@ class DynamicTable(models.Model):
     TAB_DESCRIPTION = models.TextField()
     SUP_ID = models.ForeignKey(Support, on_delete=models.CASCADE)
 
+    def add_default_column(self, col_name):
+        # récupère l'ordre de la dernière colonne
+        last_col = Column.objects.filter(TAB_ID=self).order_by('-COL_ORDER').first()
+        new_col_order = last_col.COL_ORDER + 1 if last_col else 1
+
+        # crée la nouvelle colonne
+        new_column = Column.objects.create(
+            COL_NAME=col_name,
+            COL_ORDER=new_col_order,
+            TAB_ID=self,
+            TYD_ID=TypeData.objects.filter(TYD_NAME="Texte").first() # utilise "string" par défaut
+        )
+
+        # crée une nouvelle cellule pour chaque ligne existante
+        rows = Row.objects.filter(TAB_ID=self)
+        for row in rows:
+            Cell.objects.create(
+                CEL_VALUE="",
+                COL_ID=new_column,
+                ROW_ID=row
+            )
+
+        return new_column
+
+    def add_default_row(self):
+        # récupère l'ordre de la dernière ligne
+        last_row = Row.objects.filter(TAB_ID=self).order_by('-ROW_ORDER').first()
+        new_row_order = last_row.ROW_ORDER + 1 if last_row else 1
+
+        # crée la nouvelle ligne
+        new_row = Row.objects.create(
+            ROW_NAME=f"Nouvelle ligne {new_row_order}",
+            ROW_ORDER=new_row_order,
+            TAB_ID=self
+        )
+
+        # crée une nouvelle cellule pour chaque colonne
+        columns = Column.objects.filter(TAB_ID=self)
+        for column in columns:
+            # # Détermine la valeur par défaut en fonction du type de données
+            # if column.TYD_ID.TYD_FORMAT == "string":
+            #     default_value = ""
+            # elif column.TYD_ID.TYD_FORMAT == "integer":
+            #     default_value = "0"
+            # elif column.TYD_ID.TYD_FORMAT == "float":
+            #     default_value = "0.0"
+            # elif column.TYD_ID.TYD_FORMAT == "date":
+            #     default_value = "1970-01-01"  # ou utilisez `None` pour vide si cela est acceptable
+            # else:
+            #     default_value = ""  # Valeur par défaut si le type n'est pas reconnu
+
+            Cell.objects.create(
+                CEL_VALUE="",
+                COL_ID=column,
+                ROW_ID=new_row
+            )
+
+        return new_row
+
     def __str__(self):
         return self.TAB_NAME
 

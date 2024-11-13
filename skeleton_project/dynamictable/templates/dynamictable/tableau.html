@@ -2,21 +2,46 @@
 <p>{{ description }}</p>
 <table class="table">
     <thead>
-        {% for col in columns_names %}
-            <th>{{ col }}</th>
+        {% for col in columns %}
+            <th>{{ col.name }}</th>
         {% endfor %}
-        <th><button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" class="bg-blue-500 text-white p-2">+</button></th>
+        <th>
+            <button hx-get="{% url 'dynamictable:add_column' table_id %}" 
+                    hx-target="#dynamic-content" 
+                    class="bg-blue-500 text-white p-2">+</button>
+        </th>
     </thead>
     <tbody>
         {% for row in rows %}
             <tr>
                 {% for cell in row %}
-                    <td>{{ cell }}</td>
+                    <td>
+                        {% if cell.type == 'date' %}
+                            <input  type="date" 
+                                    value="{{ cell.value }}"
+                                    hx-put="{% url 'dynamictable:update_cell' cell.cel_id %}"
+                                    hx-trigger="change"
+                                    class="border p-1">
+                        {% else %}
+                            <input  type="text"
+                                    name="{{ cell.cel_id }}"
+                                    value="{{ cell.value }}"
+                                    hx-put="{% url 'dynamictable:update_cell' cell.cel_id %}"
+                                    hx-trigger="change"
+                                    hx-headers='{"Content-Type": "application/json"}'
+                                    hx-vals='{"new_value": this.value}'
+                                    class="border p-1">
+                        {% endif %}
+                    </td>
                 {% endfor %}
             </tr>
         {% endfor %}
         <tr>
-            <td><button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" class="bg-blue-500 text-white p-2">+</button></td>
+            <td>
+                <button hx-get="{% url 'dynamictable:add_row' table_id %}" 
+                        hx-target="#dynamic-content" 
+                        class="bg-blue-500 text-white p-2">+</button>
+            </td>
         </tr>
     </tbody>
 </table>
