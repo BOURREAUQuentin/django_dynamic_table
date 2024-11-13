@@ -52,7 +52,7 @@ class Support(models.Model):
 
 class TypeData(models.Model):
     TYD_ID = models.AutoField(primary_key=True)
-    TYD_NAME = models.CharField(max_length=100)
+    TYD_NAME = models.CharField(max_length=100,unique=True)
     TYD_FORMAT = models.CharField(max_length=50)
 
     def __str__(self):

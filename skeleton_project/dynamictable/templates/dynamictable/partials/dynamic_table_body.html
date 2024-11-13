@@ -1,0 +1,17 @@
+<table class="table" id="table">
+    <thead>
+        {% for col in columns_names %}
+            <th>{{ col.COL_NAME }}</th>  <!-- Afficher le nom de la colonne -->
+        {% endfor %}
+        <th><button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button></th>
+    </thead>
+    <tbody id="table-body"> <!-- Ajoutez un id ici pour vérifier que vous ciblez bien le bon élément -->
+        {% for row in rows %}
+            <tr>
+                {% for cell in row %}
+                    <td>{{ cell.CEL_VALUE }}</td> <!-- Affiche la valeur de chaque cellule -->
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
