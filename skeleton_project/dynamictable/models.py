@@ -88,7 +88,7 @@ class DynamicTable(models.Model):
 
         return new_column
 
-    def add_default_row(self):
+    def add_row(self):
         # récupère l'ordre de la dernière ligne
         last_row = Row.objects.filter(TAB_ID=self).order_by('-ROW_ORDER').first()
         new_row_order = last_row.ROW_ORDER + 1 if last_row else 1
@@ -103,18 +103,6 @@ class DynamicTable(models.Model):
         # crée une nouvelle cellule pour chaque colonne
         columns = Column.objects.filter(TAB_ID=self)
         for column in columns:
-            # # Détermine la valeur par défaut en fonction du type de données
-            # if column.TYD_ID.TYD_FORMAT == "string":
-            #     default_value = ""
-            # elif column.TYD_ID.TYD_FORMAT == "integer":
-            #     default_value = "0"
-            # elif column.TYD_ID.TYD_FORMAT == "float":
-            #     default_value = "0.0"
-            # elif column.TYD_ID.TYD_FORMAT == "date":
-            #     default_value = "1970-01-01"  # ou utilisez `None` pour vide si cela est acceptable
-            # else:
-            #     default_value = ""  # Valeur par défaut si le type n'est pas reconnu
-
             Cell.objects.create(
                 CEL_VALUE="",
                 COL_ID=column,

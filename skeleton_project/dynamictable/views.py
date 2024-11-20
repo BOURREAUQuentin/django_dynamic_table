@@ -39,9 +39,13 @@ def update_cell(request, cell_id):
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
 
 def add_row(request, table_id):
-    table = DynamicTable.objects.get(TAB_ID=table_id)
-    new_row = table.add_default_row()
-    print(new_row)
+    table = get_object_or_404(DynamicTable, TAB_ID=table_id)
+    table.add_row()
+
+    context = load_dynamic_table_context(table_id)
+
+    # Retourner l'intégralité du tableau mis à jour
+    return render(request, 'dynamictable/dynamic_table_body.html', context)
 
 def add_column(request, table_id):
     if request.method == "POST":

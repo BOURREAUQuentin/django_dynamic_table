@@ -4,14 +4,38 @@
     {% include "dynamictable/dynamic_table_body.html" %}
 </div>
 
+
+
+
+
+
+
+
+
+
+
+<!-- faudra régler quand ca ajoute une ligne ca affiche l'ancien tableau et le nouveau tableau -->
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- Modal pour ajouter une colonne -->
 <div class="uk-modal p-6" id="my-id" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
         <h2 class="uk-modal-title">Informations colonne</h2>
         <form id="add-column-form" 
               hx-post="{% url 'dynamictable:add_column' table_id %}" 
-              hx-target="#table" 
-              hx-swap="outerHTML" 
+              hx-target="#table"
+              hx-swap="outerHTML"
               hx-on="htmx:afterRequest: handleFormSuccess(event)">
             {% csrf_token %}
             <div class="uk-margin">
