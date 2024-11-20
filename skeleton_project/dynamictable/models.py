@@ -64,7 +64,7 @@ class DynamicTable(models.Model):
     TAB_DESCRIPTION = models.TextField()
     SUP_ID = models.ForeignKey(Support, on_delete=models.CASCADE)
 
-    def add_default_column(self, col_name):
+    def add_column(self, col_name, typ_name):
         # récupère l'ordre de la dernière colonne
         last_col = Column.objects.filter(TAB_ID=self).order_by('-COL_ORDER').first()
         new_col_order = last_col.COL_ORDER + 1 if last_col else 1
@@ -74,7 +74,7 @@ class DynamicTable(models.Model):
             COL_NAME=col_name,
             COL_ORDER=new_col_order,
             TAB_ID=self,
-            TYD_ID=TypeData.objects.filter(TYD_NAME="Texte").first() # utilise "string" par défaut
+            TYD_ID=TypeData.objects.filter(TYD_NAME=typ_name).first()
         )
 
         # crée une nouvelle cellule pour chaque ligne existante

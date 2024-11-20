@@ -1,17 +1,11 @@
-<h2>{{ name }}</h2>
-<p>{{ description }}</p>
-<table class="table">
+<table class="table" id="table">
     <thead>
         {% for col in columns %}
             <th>{{ col.name }}</th>
         {% endfor %}
-        <th>
-            <button hx-get="{% url 'dynamictable:add_column' table_id %}" 
-                    hx-target="#dynamic-content" 
-                    class="bg-blue-500 text-white p-2">+</button>
-        </th>
+        <th><button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button></th>
     </thead>
-    <tbody>
+    <tbody id="table-body">
         {% for row in rows %}
             <tr>
                 {% for cell in row %}
