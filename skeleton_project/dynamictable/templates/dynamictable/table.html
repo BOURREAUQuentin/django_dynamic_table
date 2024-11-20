@@ -2,29 +2,31 @@
     <h2>{{ name }}</h2>
     <p>{{ description }}</p>
     {% include "dynamictable/dynamic_table_body.html" %}
-
 </div>
 
 <!-- Modal pour ajouter une colonne -->
 <div class="uk-modal p-6" id="my-id" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
         <h2 class="uk-modal-title">Informations colonne</h2>
-        <form hx-post="{% url 'dynamictable:add_column' table_id %}"
-            hx-target="#table"  
-            hx-swap="outerHTML"
-            hx-on="htmx:afterRequest: closeModal()">
+        <form id="add-column-form" 
+              hx-post="{% url 'dynamictable:add_column' table_id %}" 
+              hx-target="#table" 
+              hx-swap="outerHTML" 
+              hx-on="htmx:afterRequest: handleFormSuccess(event)">
             {% csrf_token %}
             <div class="uk-margin">
                 <label class="uk-form-label" for="form-stacked-text">Nom de la colonne</label>
-                <input class="uk-input" type="text" name="name" placeholder="Nom de la colonne" required>
+                <input id="column-name" class="uk-input" type="text" name="name" placeholder="Nom de la colonne" required>
+                <div id="error-name" class="uk-text-danger" style="display: none;"></div>
             </div>
             <div class="uk-margin">
                 <label class="uk-form-label" for="form-stacked-select">Type de colonne</label>
-                <select class="uk-select" name="type" required>
+                <select id="column-type" class="uk-select" name="type" required>
                     <option value="Texte">Texte</option>
                     <option value="Nombre">Nombre</option>
                     <option value="Date">Date</option>
                 </select>
+                <div id="error-type" class="uk-text-danger" style="display: none;"></div>
             </div>
             <div class="uk-margin">
                 <p class="uk-text-right">
@@ -33,14 +35,51 @@
                 </p>
             </div>
         </form>
-
     </div>
 </div>
 
 <script>
+    UIkit.util.on('#my-id', 'hide', function () {
+        // Réinitialiser les champs du formulaire
+        const form = document.getElementById('add-column-form');
+        if (form) {
+            form.reset();
+        }
+
+        // Cacher les messages d'erreur
+        const errorMessages = document.querySelectorAll('[id^="error-"]');
+        errorMessages.forEach(function(error) {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+    });
+
+    document.addEventListener("htmx:responseError", function(event) {
+            const response = event.detail.xhr.response;
+            const data = JSON.parse(response);
+
+            // Afficher les erreurs spécifiques aux champs
+            if (data.error_field && data.error) {
+                const errorField = document.getElementById(`error-${data.error_field}`);
+                if (errorField) {
+                    errorField.style.display = 'block';
+                    errorField.textContent = data.error;
+                }
+            }
+        });
+
+    function handleFormSuccess(event) {
+        const xhr = event.detail.xhr;
+
+        // Vérifier si la réponse a un statut HTTP 2xx (succès)
+        if (xhr.status >= 200 && xhr.status < 300) {
+            closeModal(); // Fermer la popup si la soumission a réussi
+        }
+    }
+
     function closeModal() {
         setTimeout(function() {
             UIkit.modal('#my-id').hide();
-        }, 300); // 300ms pour attendre la mise à jour du DOM
+        }, 50); // 50ms pour attendre la mise à jour du DOM
     }
 </script>
