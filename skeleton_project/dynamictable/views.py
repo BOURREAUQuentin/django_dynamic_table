@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from .models import DynamicTable, Column, Row, Cell, TypeData
+from .models import DynamicTable, Column, Row, Cell, TypeData, TagOption
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 
@@ -77,34 +77,46 @@ def add_column(request, table_id):
 
 def load_dynamic_table_context(table_id):
     table = get_object_or_404(DynamicTable, TAB_ID=table_id)
-
-    # Récupérer les colonnes et les lignes mises à jour
     columns = Column.objects.filter(TAB_ID=table).order_by('COL_ORDER')
     rows = Row.objects.filter(TAB_ID=table).order_by('ROW_ORDER')
 
-    # Préparer les données des colonnes
     columns_data = []
     for column in columns:
         columns_data.append({
             'name': column.COL_NAME,
-            'type': column.TYD_ID.TYD_FORMAT  # Ajout du type de données
+            'type': column.TYD_ID.TYD_FORMAT,
+            'id': column.COL_ID
         })
 
-    # Préparer les données des lignes
     rows_data = []
     for row in rows:
         row_values = []
         for column in columns:
             cell = Cell.objects.filter(COL_ID=column, ROW_ID=row).first()
             cell_value = cell.CEL_VALUE if cell else ""
-            row_values.append({
+
+            cell_data = {
                 'value': cell_value,
-                'type': column.TYD_ID.TYD_FORMAT,  # Ajout du type de données
-                'cel_id': cell.CEL_ID if cell else None
-            })
+                'type': column.TYD_ID.TYD_FORMAT,
+                'cel_id': cell.CEL_ID if cell else None,
+                'column_id': column.COL_ID
+            }
+
+            if column.TYD_ID.TYD_FORMAT == 'tag':
+                tag_options = TagOption.objects.filter(COL_ID=column)
+                cell_data['tag_options'] = [
+                    {'value': tag.TAG_VALUE, 'color': tag.TAG_COLOR}
+                    for tag in tag_options
+                ]
+                if cell:
+                    cell_data['tag_color'] = next(
+                        (tag.TAG_COLOR for tag in tag_options if tag.TAG_VALUE == cell_value),
+                        None
+                    )
+
+            row_values.append(cell_data)
         rows_data.append(row_values)
 
-    # Contexte pour le rendu
     context = {
         'name': table.TAB_NAME,
         'description': table.TAB_DESCRIPTION,
@@ -112,5 +124,4 @@ def load_dynamic_table_context(table_id):
         'rows': rows_data,
         'table_id': table_id,
     }
-
     return context

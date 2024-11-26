@@ -10,6 +10,7 @@
 
     <button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-table" class="bg-blue-500 text-white p-2">Afficher le tableau 1</button>
     <button hx-get="{% url 'dynamictable:dynamictable' 2 %}" hx-target="#dynamic-table" class="bg-blue-500 text-white p-2">Afficher le tableau 2</button>
+    <button hx-get="{% url 'dynamictable:dynamictable' 3 %}" hx-target="#dynamic-table" class="bg-blue-500 text-white p-2">Afficher le tableau 3</button>
     <div id="dynamic-table"></div>
 
     <div x-data="{ open: false }">

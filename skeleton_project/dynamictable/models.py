@@ -57,6 +57,15 @@ class TypeData(models.Model):
 
     def __str__(self):
         return self.TYD_NAME
+    
+class TagOption(models.Model):
+    TAG_ID = models.AutoField(primary_key=True)
+    TAG_COLOR = models.CharField(max_length=50)  # Couleur en format hex ou nom
+    TAG_VALUE = models.CharField(max_length=100)  # Valeur associée
+    COL_ID = models.ForeignKey('Column', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.TAG_VALUE} ({self.TAG_COLOR})"
 
 class DynamicTable(models.Model):
     TAB_ID = models.AutoField(primary_key=True)
@@ -64,7 +73,7 @@ class DynamicTable(models.Model):
     TAB_DESCRIPTION = models.TextField()
     SUP_ID = models.ForeignKey(Support, on_delete=models.CASCADE)
 
-    def add_column(self, col_name, typ_name):
+    def add_column(self, col_name, typ_name, tag_options=None):
         # récupère l'ordre de la dernière colonne
         last_col = Column.objects.filter(TAB_ID=self).order_by('-COL_ORDER').first()
         new_col_order = last_col.COL_ORDER + 1 if last_col else 1
@@ -76,6 +85,15 @@ class DynamicTable(models.Model):
             TAB_ID=self,
             TYD_ID=TypeData.objects.filter(TYD_NAME=typ_name).first()
         )
+        
+        # si c'est une colonne de type Tag, ajoute les options
+        if typ_name == "Tag" and tag_options:
+            for color, value in tag_options.items():
+                TagOption.objects.create(
+                    TAG_COLOR=color,
+                    TAG_VALUE=value,
+                    COL_ID=new_column
+                )
 
         # crée une nouvelle cellule pour chaque ligne existante
         rows = Row.objects.filter(TAB_ID=self)
