@@ -53,21 +53,46 @@ def add_column(request, table_id):
         col_name = request.POST.get("name")
         col_type = request.POST.get("type")
 
-        # Vérifier si une colonne avec ce nom existe déjà
+        # vérifie si une colonne avec ce nom existe déjà
         if Column.objects.filter(TAB_ID=table, COL_NAME=col_name).exists():
             return JsonResponse({"success": False, "error_field": "name", "error": "Une colonne avec ce nom existe déjà."}, status=400)
 
-        # Vérifier le type de donnée de la colonne
+        # vérifie le type de donnée de la colonne
         type_data = TypeData.objects.filter(TYD_NAME=col_type).first()
         if not type_data:
             return JsonResponse({"success": False, "error_field": "type", "error": "Type de donnée non trouvé."}, status=400)
+        
+        # ajout de la nouvelle colonne à la table
+        tag_options = {}  # Initialisation du dictionnaire pour les tags
 
-        # Ajouter la nouvelle colonne à la table
-        table.add_column(col_name=col_name, typ_name=col_type)
+        # si la colonne est de type Tag, on récupère les options de tags
+        if col_type == "Tag":
+            # parcourt les tags envoyés dans le formulaire
+            
+            
+            
+            
+            
+            
+            for i in range(1, 21): # supposons qu'on ait 20 tags max
+                
+                
+                
+                
+                
+                
+                
+                tag_value = request.POST.get(f"tag_value_{i}")
+                tag_color = request.POST.get(f"tag_color_{i}")
+                if tag_value and tag_value != "": # si la valeur du tag est renseignée
+                    tag_options[tag_color] = tag_value # on associe la couleur à la valeur
+
+        # ajout de la colonne (avec éventuellement les tags)
+        table.add_column(col_name=col_name, typ_name=col_type, tag_options=tag_options)
 
         context = load_dynamic_table_context(table_id)
 
-        # Retourner l'intégralité du tableau mis à jour
+        # retourne l'intégralité du tableau mis à jour
         return render(request, 'dynamictable/dynamic_table_body.html', context)
 
 

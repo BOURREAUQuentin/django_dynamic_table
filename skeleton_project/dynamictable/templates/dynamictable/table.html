@@ -4,30 +4,7 @@
     {% include "dynamictable/dynamic_table_body.html" %}
 </div>
 
-
-
-
-
-
-
-
-
-
-
-<!-- faudra régler quand ca ajoute une ligne ca affiche l'ancien tableau et le nouveau tableau -->
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!-- Modal pour ajouter une colonne -->
 <!-- Modal pour ajouter une colonne -->
 <div class="uk-modal p-6" id="my-id" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
@@ -45,12 +22,23 @@
             </div>
             <div class="uk-margin">
                 <label class="uk-form-label" for="form-stacked-select">Type de colonne</label>
-                <select id="column-type" class="uk-select" name="type" required>
+                <select id="column-type" class="uk-select" name="type" required onchange="handleColumnTypeChange()">
                     <option value="Texte">Texte</option>
                     <option value="Nombre">Nombre</option>
                     <option value="Date">Date</option>
+                    <option value="Tag">Tag</option>  <!-- Ajouter une option pour les tags -->
                 </select>
                 <div id="error-type" class="uk-text-danger" style="display: none;"></div>
+            </div>
+            <div id="tag-fields" class="uk-margin" style="display: none;">
+                <label class="uk-form-label">Tags</label>
+                <div id="tags-container">
+                    <div class="tag-row" id="tag-1">
+                        <input class="uk-input" type="text" name="tag_value_1" placeholder="Valeur du tag">
+                        <input class="uk-input" type="color" name="tag_color_1" value="#ff0000">
+                    </div>
+                </div>
+                <button type="button" class="uk-button uk-button-default" id="add-tag-btn" onclick="addTagField()">+ Ajouter un tag</button>
             </div>
             <div class="uk-margin">
                 <p class="uk-text-right">
@@ -76,6 +64,26 @@
             error.style.display = 'none';
             error.textContent = '';
         });
+
+        // Cacher la section des tags et réinitialiser le container
+        const tagFields = document.getElementById('tag-fields');
+        if (tagFields) {
+            tagFields.style.display = 'none';
+        }
+        
+        // Réinitialiser le container des tags à son état initial
+        const tagsContainer = document.getElementById('tags-container');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = `
+                <div class="tag-row" id="tag-1">
+                    <input class="uk-input" type="text" name="tag_value_1" placeholder="Valeur du tag">
+                    <input class="uk-input" type="color" name="tag_color_1" value="#ff0000">
+                </div>
+            `;
+        }
+        
+        // Réinitialiser le compteur de tags
+        tagCount = 1;
     });
 
     document.addEventListener("htmx:responseError", function(event) {
@@ -105,5 +113,38 @@
         setTimeout(function() {
             UIkit.modal('#my-id').hide();
         }, 50); // 50ms pour attendre la mise à jour du DOM
+    }
+
+
+    let tagCount = 1;  // Compteur pour les tags ajoutés
+
+    function handleColumnTypeChange() {
+        const columnType = document.getElementById('column-type').value;
+        const tagFields = document.getElementById('tag-fields');
+        
+        if (columnType === 'Tag') {
+            tagFields.style.display = 'block'; // Afficher les champs pour les tags
+        } else {
+            tagFields.style.display = 'none'; // Masquer les champs pour les tags
+        }
+    }
+
+    function addTagField() {
+        tagCount++;  // Incrémenter le compteur des tags
+
+        // Créer un nouveau div pour le nouveau tag
+        const newTagRow = document.createElement('div');
+        newTagRow.classList.add('tag-row');
+        newTagRow.id = `tag-${tagCount}`;
+
+        // Créer les champs d'entrée pour le tag
+        newTagRow.innerHTML = `
+            <input class="uk-input" type="text" name="tag_value_${tagCount}" placeholder="Valeur du tag">
+            <input class="uk-input" type="color" name="tag_color_${tagCount}" value="#ff0000">
+        `;
+
+        // Ajouter la nouvelle ligne de tag dans le container
+        const tagsContainer = document.getElementById('tags-container');
+        tagsContainer.appendChild(newTagRow);
     }
 </script>
