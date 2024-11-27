@@ -5,7 +5,6 @@
 </div>
 
 <!-- Modal pour ajouter une colonne -->
-<!-- Modal pour ajouter une colonne -->
 <div class="uk-modal p-6" id="my-id" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
         <h2 class="uk-modal-title">Informations colonne</h2>
@@ -51,6 +50,43 @@
 </div>
 
 <script>
+    // ajout automatiquement le token CSRF à toutes les requêtes HTMX
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+        evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+
+    let tagCount = 1;  // Compteur pour les tags ajoutés
+
+    function handleColumnTypeChange() {
+        const columnType = document.getElementById('column-type').value;
+        const tagFields = document.getElementById('tag-fields');
+        
+        if (columnType === 'Tag') {
+            tagFields.style.display = 'block'; // Afficher les champs pour les tags
+        } else {
+            tagFields.style.display = 'none'; // Masquer les champs pour les tags
+        }
+    }
+
+    function addTagField() {
+        tagCount++;  // Incrémenter le compteur des tags
+
+        // Créer un nouveau div pour le nouveau tag
+        const newTagRow = document.createElement('div');
+        newTagRow.classList.add('tag-row');
+        newTagRow.id = `tag-${tagCount}`;
+
+        // Créer les champs d'entrée pour le tag
+        newTagRow.innerHTML = `
+            <input class="uk-input" type="text" name="tag_value_${tagCount}" placeholder="Valeur du tag">
+            <input class="uk-input" type="color" name="tag_color_${tagCount}" value="#ff0000">
+        `;
+
+        // Ajouter la nouvelle ligne de tag dans le container
+        const tagsContainer = document.getElementById('tags-container');
+        tagsContainer.appendChild(newTagRow);
+    }
+
     UIkit.util.on('#my-id', 'hide', function () {
         // Réinitialiser les champs du formulaire
         const form = document.getElementById('add-column-form');
@@ -113,38 +149,5 @@
         setTimeout(function() {
             UIkit.modal('#my-id').hide();
         }, 50); // 50ms pour attendre la mise à jour du DOM
-    }
-
-
-    let tagCount = 1;  // Compteur pour les tags ajoutés
-
-    function handleColumnTypeChange() {
-        const columnType = document.getElementById('column-type').value;
-        const tagFields = document.getElementById('tag-fields');
-        
-        if (columnType === 'Tag') {
-            tagFields.style.display = 'block'; // Afficher les champs pour les tags
-        } else {
-            tagFields.style.display = 'none'; // Masquer les champs pour les tags
-        }
-    }
-
-    function addTagField() {
-        tagCount++;  // Incrémenter le compteur des tags
-
-        // Créer un nouveau div pour le nouveau tag
-        const newTagRow = document.createElement('div');
-        newTagRow.classList.add('tag-row');
-        newTagRow.id = `tag-${tagCount}`;
-
-        // Créer les champs d'entrée pour le tag
-        newTagRow.innerHTML = `
-            <input class="uk-input" type="text" name="tag_value_${tagCount}" placeholder="Valeur du tag">
-            <input class="uk-input" type="color" name="tag_color_${tagCount}" value="#ff0000">
-        `;
-
-        // Ajouter la nouvelle ligne de tag dans le container
-        const tagsContainer = document.getElementById('tags-container');
-        tagsContainer.appendChild(newTagRow);
     }
 </script>

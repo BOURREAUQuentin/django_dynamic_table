@@ -38,6 +38,34 @@ def update_cell(request, cell_id):
 
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
 
+@csrf_exempt
+def update_column_order(request, table_id):
+    if request.method == "POST":
+        try:
+            # Récupérer les données envoyées par le client
+            column_order = request.POST.get("column_order")  # Ex : "1,3,2,4"
+            if column_order:
+                column_ids = column_order.split(",")  # Liste des IDs dans le nouvel ordre
+                try:
+                    # Mettez à jour l'ordre dans la base de données
+                    for index, column_id in enumerate(column_ids):
+                        print(index)
+                        print(column_id)
+                        print("------------")
+                        Column.objects.filter(COL_ID=column_id, TAB_ID=table_id).update(COL_ORDER=index)
+
+                    # Renvoyez les IDs dans l'ordre mis à jour
+                    updated_columns = list(Column.objects.filter(TAB_ID=table_id).order_by("COL_ORDER").values("COL_ID", "COL_NAME"))
+                    print(updated_columns)
+                    return JsonResponse({"status": "success", "columns": updated_columns})
+                except Exception as e:
+                    return JsonResponse({"status": "error", "message": str(e)})
+            else:
+                return JsonResponse({"status": "error", "message": "Invalid column order"}, status=400)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
+
 def add_row(request, table_id):
     table = get_object_or_404(DynamicTable, TAB_ID=table_id)
     table.add_row()
