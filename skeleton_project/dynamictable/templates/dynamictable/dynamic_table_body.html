@@ -146,9 +146,32 @@
                             updateColumnIds(updatedColumns);
                         })
                         .catch((error) => console.error("Erreur de mise à jour :", error));
+
+                    updateColumnOrder(fromIndex, toIndex);
                 }
             },
         });
+
+        function updateColumnOrder(fromIndex, toIndex) {
+            // Parcourt toutes les lignes et réorganise les cellules
+            Array.from(tableBody.rows).forEach((row) => {
+                let cells = Array.from(row.children); // Récupère les cellules (td)
+                if (cells[fromIndex] && cells[toIndex]) {
+                    let movedCell = cells.splice(fromIndex, 1)[0]; // Retire la cellule déplacée
+                    cells.splice(toIndex, 0, movedCell); // Insère la cellule à la nouvelle position
+
+                    // Supprime toutes les cellules actuelles et les réinsère dans le nouvel ordre
+                    while (row.firstChild) {
+                        row.removeChild(row.firstChild); // Nettoie les cellules existantes
+                    }
+                    cells.forEach(cell => {
+                        if (cell instanceof HTMLElement) {
+                            row.appendChild(cell); // Ajoute les cellules réorganisées
+                        }
+                    });
+                }
+            });
+        }
 
         function saveColumnOrder(columnIds) {
             return fetch(`dynamictable/table/{{ table_id }}/update_column_order/`, {

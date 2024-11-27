@@ -48,10 +48,7 @@ def update_column_order(request, table_id):
                 column_ids = column_order.split(",")  # Liste des IDs dans le nouvel ordre
                 try:
                     # Mettez à jour l'ordre dans la base de données
-                    for index, column_id in enumerate(column_ids):
-                        print(index)
-                        print(column_id)
-                        print("------------")
+                    for index, column_id in enumerate(column_ids, start=1):
                         Column.objects.filter(COL_ID=column_id, TAB_ID=table_id).update(COL_ORDER=index)
 
                     # Renvoyez les IDs dans l'ordre mis à jour
