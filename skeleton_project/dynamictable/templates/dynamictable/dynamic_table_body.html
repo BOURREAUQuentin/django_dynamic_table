@@ -1,14 +1,33 @@
 <table class="table" id="table">
     <thead>
         {% for col in columns %}
-            <th>{{ col.name }}</th>
+            <th style="height: 50px; position: relative; padding: 0;">
+                <div id="dropdown-{{ col.id_column }}" uk-toggle="target: #dropdown-{{ col.id_column }}-content" 
+                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <p>{{ col.name }}</p>
+                </div>
+                <div id="dropdown-{{ col.id_column }}-content" class="uk-navbar-dropdown" uk-dropdown="boundary: !.uk-navbar; stretch: x; flip: false; mode: click;">
+                    <ul class="uk-dropdown-nav uk-nav">
+                        <li ><a href="#">Modifier</a></li>
+                        <li>
+                            <button hx-get="{% url 'dynamictable:delete_column' table_id=table_id column_id=col.id_column %}" 
+                                hx-target="#table" 
+                                class="bg-red-500 text-red-custom p-2">
+                                Supprimer
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </th>
         {% endfor %}
+
         <th><button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button></th>
     </thead>
     <tbody id="table-body">
         {% for row in rows %}
-            <tr>
-                {% for cell in row %}
+            <tr class="uk-visible-toggle" tabindex="-1">
+                
+                {% for cell in row.values %}
                     <td>
                         {% if cell.type == 'date' %}
                             <input  type="date"
@@ -34,6 +53,18 @@
                         {% endif %}
                     </td>
                 {% endfor %}
+                <td class="uk-width-auto" style="width: 5%; height:50px;">
+                    <ul class="uk-iconnav uk-hidden-hover">
+                        <li>
+                            <button hx-get="{% url 'dynamictable:delete_row' table_id=table_id row_id=row.ROW_ID %}" 
+                                hx-target="#table" 
+                                class="bg-red-500 text-red-custom ">
+                                <span uk-icon="icon: trash; ratio:1"></span>
+                            </button>
+                            
+                        </li>
+                    </ul>
+                </td>
             </tr>
         {% endfor %}
         <tr>

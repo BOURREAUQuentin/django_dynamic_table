@@ -17,22 +17,28 @@ def get_dynamic_table_html(request, table_id):
     for column in columns:
         columns_data.append({
             'name': column.COL_NAME,
-            'type': column.TYD_ID.TYD_FORMAT  # Ajout du type de données
+            'type': column.TYD_ID.TYD_FORMAT,  # Ajout du type de données
+            'column_order': column.COL_ORDER,
+            'id_column': column.COL_ID
         })
     
     rows_data = []
     for row in rows:
-        row_values = []
+        row_values = {
+            'ROW_ID': row.ROW_ID,
+            'values': []
+        }
         for column in columns:
             cell = Cell.objects.filter(COL_ID=column, ROW_ID=row).first()
             cell_value = cell.CEL_VALUE if cell else ""
-            row_values.append({
+            row_values['values'].append({
                 'value': cell_value,
                 'type': column.TYD_ID.TYD_FORMAT,  # Ajout du type de données
                 'cel_id': cell.CEL_ID if cell else None
             })
         rows_data.append(row_values)
         
+           
     context = {
         'name': table.TAB_NAME,
         'description': table.TAB_DESCRIPTION,
@@ -81,6 +87,91 @@ def add_column(request, table_id):
         if not type_data:
             return JsonResponse({"success": False, "error": "Type de donnée non trouvé"}, status=400)
 
-        table.add_column(col_name=col_name, typ_name=col_type)
+        table.add_column(col_name=col_name, typ_name=col_type, )
+        context = load_dynamic_table_context(table_id)
+        return render(request, 'dynamictable/dynamic_table_body.html', context)
 
-        return get_dynamic_table_html(request, table_id)
+
+def load_dynamic_table_context(table_id):
+    table = get_object_or_404(DynamicTable, TAB_ID=table_id)
+    columns = Column.objects.filter(TAB_ID=table).order_by('COL_ORDER')
+    rows = Row.objects.filter(TAB_ID=table).order_by('ROW_ORDER')
+    
+    
+    # Préparer les données pour le template
+    columns_data = []
+    for column in columns:
+        columns_data.append({
+            'name': column.COL_NAME,
+            'type': column.TYD_ID.TYD_FORMAT,  # Ajout du type de données
+            'column_order': column.COL_ORDER,
+            'id_column': column.COL_ID
+        })
+    
+    rows_data = []
+    for row in rows:
+        row_values = {
+            'ROW_ID': row.ROW_ID,
+            'values': []
+        }
+        for column in columns:
+            cell = Cell.objects.filter(COL_ID=column, ROW_ID=row).first()
+            cell_value = cell.CEL_VALUE if cell else ""
+            row_values['values'].append({
+                'value': cell_value,
+                'type': column.TYD_ID.TYD_FORMAT,  # Ajout du type de données
+                'cel_id': cell.CEL_ID if cell else None
+            })
+        rows_data.append(row_values)
+        
+    context = {
+        'name': table.TAB_NAME,
+        'description': table.TAB_DESCRIPTION,
+        'columns': columns_data,
+        'rows': rows_data,
+        'table_id': table_id,
+    }
+    
+    return context
+
+def delete_column(request, table_id, column_id):
+    print(f"Received table_id: {table_id}, column_id: {column_id}")
+    # Récupérer la colonne à supprimer
+    column = get_object_or_404(Column, COL_ID=column_id, TAB_ID=table_id)
+    
+    print(column.COL_ORDER)
+    # Supprimer les cellules associées à cette colonne
+    Cell.objects.filter(COL_ID=column).delete()
+    
+    # Supprimer la colonne elle-même
+    column.delete()
+    
+    remaining_columns = Column.objects.filter(TAB_ID=table_id).order_by('COL_ORDER')
+    for new_order, col in enumerate(remaining_columns, start=1):
+        col.COL_ORDER = new_order
+        col.save()
+
+    context = load_dynamic_table_context(table_id)
+    return render(request, 'dynamictable/dynamic_table_body.html', context)
+
+
+def delete_row(request, table_id, row_id):
+    print(f"Received table_id: {table_id}, row_id: {row_id}")
+    # Récupérer la colonne à row
+    row = get_object_or_404(Row, ROW_ID=row_id, TAB_ID=table_id)
+    
+    
+    # Supprimer les cellules associées à cette row
+    Cell.objects.filter(ROW_ID=row).delete()
+    
+    # Supprimer la row elle-même
+    row.delete()
+    
+    remaining_row = Row.objects.filter(TAB_ID=table_id).order_by('ROW_ORDER')
+    for new_order, row in enumerate(remaining_row, start=1):
+        row.ROW_ORDER = new_order
+        row.save()
+
+    context = load_dynamic_table_context(table_id)
+    return render(request, 'dynamictable/dynamic_table_body.html', context)
+
