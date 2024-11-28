@@ -6,7 +6,7 @@
 </div>
 
 <!-- Modal pour ajouter une colonne -->
-<div class="uk-modal p-6" id="my-id" uk-modal>
+<div class="uk-modal p-6" id="my-id-{{ table_id }}" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
         <h2 class="uk-modal-title">Informations colonne</h2>
         <form id="add-column-form" 
@@ -26,7 +26,7 @@
                     <option value="Texte">Texte</option>
                     <option value="Nombre">Nombre</option>
                     <option value="Date">Date</option>
-                    <option value="Tag">Tag</option>  <!-- Ajouter une option pour les tags -->
+                    <option value="Tag">Tag</option>
                 </select>
                 <div id="error-type" class="uk-text-danger" style="display: none;"></div>
             </div>
@@ -89,7 +89,8 @@
         tagsContainer.appendChild(newTagRow);
     }
 
-    UIkit.util.on('#my-id', 'hide', function () {
+    UIkit.util.on('.uk-modal', 'hide', function () {
+        console.log("reset de la popup");
         // Réinitialiser les champs du formulaire
         const form = document.getElementById('add-column-form');
         if (form) {
@@ -149,7 +150,30 @@
 
     function closeModal() {
         setTimeout(function() {
-            UIkit.modal('#my-id').hide();
+            UIkit.modal('.uk-modal').hide();
         }, 50); // 50ms pour attendre la mise à jour du DOM
+    }
+
+    /////////////////// fermeture des anciennes popup //////////////////////
+    UIkit.util.on('.uk-modal', 'beforeshow', function () {
+        const modal = this;
+        const currentTableId = modal.id.split('-').pop(); // Extraire le table_id de la modal en cours
+
+        cleanupModals(currentTableId); // Nettoyer les autres modales
+    });
+
+
+    function cleanupModals(currentTableId) {
+        // Sélectionne toutes les modales présentes dans le DOM
+        const modals = document.querySelectorAll('.uk-modal');
+
+        modals.forEach(modal => {
+            const tableId = modal.id.split('-').pop(); // Extraire le table_id de l'ID de la modal
+
+            // Supprimer la modal si elle ne correspond pas à l'ID actuel
+            if (tableId !== currentTableId) {
+                modal.remove(); // Retirer complètement du DOM
+            }
+        });
     }
 </script>

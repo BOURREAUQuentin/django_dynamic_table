@@ -5,7 +5,7 @@
                 <th class="movable" data-column-id="{{ col.id }}">{{ col.name }}</th>
             {% endfor %}
             <th>
-                <button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button>
+                <button uk-toggle="target: #my-id-{{ table_id }}" class="bg-blue-500 text-white p-2">+</button>
             </th>
         </tr>
     </thead>
