@@ -1,6 +1,7 @@
 <div id="dynamic-content">
     <h2>{{ name }}</h2>
     <p>{{ description }}</p>
+    <p>{{ table_id }}</p>
     {% include "dynamictable/dynamic_table_body.html" %}
 </div>
 
@@ -55,12 +56,13 @@
         evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     });
 
-    let tagCount = 1;  // Compteur pour les tags ajoutés
+    var tagCount = 1;  // Compteur pour les tags ajoutés
 
     function handleColumnTypeChange() {
         const columnType = document.getElementById('column-type').value;
         const tagFields = document.getElementById('tag-fields');
         
+        console.log(`changement nouveau type de colonne : ${columnType}`);
         if (columnType === 'Tag') {
             tagFields.style.display = 'block'; // Afficher les champs pour les tags
         } else {

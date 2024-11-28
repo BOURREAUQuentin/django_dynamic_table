@@ -1,4 +1,4 @@
-<table class="table" id="table">
+<table class="table" id="table" data-table-id="{{ table_id }}">
     <thead>
         <tr id="table-header">
             {% for col in columns %}
@@ -119,8 +119,11 @@
 
     // charge le sortable dès que le htmx est load (la page a fini de charger)
     document.body.addEventListener("htmx:load", function () {
+        
+        let tableElement = document.getElementById("table");
         let header = document.getElementById("table-header");
         let tableBody = document.getElementById("table-body");
+        const tableId = tableElement.dataset.tableId;
 
         Sortable.create(header, {
             animation: 100,
@@ -130,7 +133,7 @@
                 let toIndex = event.newIndex;
 
                 if (fromIndex !== toIndex) {
-                    console.log(`Colonne déplacée de ${fromIndex} à ${toIndex}`);
+                    console.log(`Colonne déplacée de ${fromIndex} à ${toIndex} pour le tableau ${tableId}`);
 
                     // Récupère l'ordre actuel des IDs des colonnes
                     const columnIds = Array.from(header.children)
@@ -140,7 +143,7 @@
                     console.log("Nouvel ordre des colonnes :", columnIds);
 
                     // Envoyer les données à la base de données
-                    saveColumnOrder(columnIds)
+                    saveColumnOrder(tableId, columnIds)
                         .then((updatedColumns) => {
                             // Met à jour les IDs des colonnes dans le DOM
                             updateColumnIds(updatedColumns);
@@ -173,8 +176,8 @@
             });
         }
 
-        function saveColumnOrder(columnIds) {
-            return fetch(`dynamictable/table/{{ table_id }}/update_column_order/`, {
+        function saveColumnOrder(tableId, columnIds) {
+            return fetch(`dynamictable/table/${tableId}/update_column_order/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
