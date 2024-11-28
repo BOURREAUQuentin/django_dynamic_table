@@ -11,8 +11,8 @@
     </thead>
     <tbody id="table-body">
         {% for row in rows %}
-            <tr>
-                {% for cell in row %}
+            <tr data-row-id="{{ row.row_id }}">
+                {% for cell in row.cells %}
                     <td>
                         {% if cell.type == 'tag' %}
                         <div class="relative">
@@ -65,7 +65,7 @@
                 {% endfor %}
             </tr>
         {% endfor %}
-        <tr>
+        <tr class="no-sort">
             <td>
                 <button hx-get="{% url 'dynamictable:add_row' table_id %}" hx-target="#table" class="bg-blue-500 text-white p-2">+</button>
             </td>
@@ -156,6 +156,44 @@
             },
         });
 
+        // sortable pour les lignes
+        Sortable.create(tableBody, {
+            animation: 150,
+            filter: ".no-sort", // Empêche le tri des éléments ayant cette classe
+            onEnd: (event) => {
+                let fromIndex = event.oldIndex;
+                let toIndex = event.newIndex;
+
+                // Ignore les mouvements impliquant la ligne "no-sort"
+                const targetRow = tableBody.children[toIndex];
+                const isAddRow = targetRow && targetRow.querySelector('button'); // Vérifie si la ligne contient un bouton
+
+                console.log(targetRow);
+                if (isAddRow) {
+                    console.log("Impossible de déplacer une ligne vers la ligne contenant le bouton '+'");
+                    return; // Ne rien faire si la cible est la ligne avec le bouton "+"
+                }
+
+                if (fromIndex !== toIndex) {
+                    console.log(`Ligne déplacée de ${fromIndex} à ${toIndex} pour le tableau ${tableId}`);
+
+                    // Récupère l'ordre actuel des IDs des lignes
+                    const rowIds = Array.from(tableBody.children)
+                        .filter((row) => row.dataset.rowId)
+                        .map((row) => row.dataset.rowId);
+
+                    console.log("Nouvel ordre des lignes :", rowIds);
+
+                    // Envoyer les données à la base de données
+                    saveRowOrder(tableId, rowIds)
+                        .then((updatedRows) => {
+                            console.log("Ordre des lignes mis à jour avec succès.");
+                        })
+                        .catch((error) => console.error("Erreur de mise à jour :", error));
+                }
+            },
+        });
+
         function updateColumnOrder(fromIndex, toIndex) {
             // Parcourt toutes les lignes et réorganise les cellules
             Array.from(tableBody.rows).forEach((row) => {
@@ -212,6 +250,30 @@
             });
 
             console.log("IDs des colonnes mis à jour :", columns.map((col) => col.id));
+        }
+
+        function saveRowOrder(tableId, rowIds) {
+            return fetch(`dynamictable/table/${tableId}/update_row_order/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: `row_order=${rowIds.join(",")}`,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.status === "success") {
+                        return data.rows; // Retourne les lignes mises à jour
+                    } else {
+                        throw new Error(data.message || "Erreur inconnue");
+                    }
+                });
         }
     });
 </script>

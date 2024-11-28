@@ -46,7 +46,7 @@ def update_column_order(request, table_id):
             if column_order:
                 column_ids = column_order.split(",")  # Liste des IDs dans le nouvel ordre
                 try:
-                    # Mettez à jour l'ordre dans la base de données
+                    # Met à jour l'ordre dans la base de données
                     for index, column_id in enumerate(column_ids, start=1):
                         Column.objects.filter(COL_ID=column_id, TAB_ID=table_id).update(COL_ORDER=index)
 
@@ -61,6 +61,25 @@ def update_column_order(request, table_id):
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
+
+@csrf_exempt
+def update_row_order(request, table_id):
+    if request.method == "POST":
+        row_order = request.POST.get("row_order")
+        if not row_order:
+            return JsonResponse({"status": "error", "message": "Aucun ordre de ligne reçu."})
+        
+        row_ids = row_order.split(",")
+        try:
+            # Met à jour l'ordre des lignes en base de données
+            for index, row_id in enumerate(row_ids, start=1):
+                Row.objects.filter(ROW_ID=row_id, TAB_ID=table_id).update(ROW_ORDER=index)
+
+            return JsonResponse({"status": "success", "rows": row_ids})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+
+    return JsonResponse({"status": "error", "message": "Requête invalide."})
 
 def add_row(request, table_id):
     table = get_object_or_404(DynamicTable, TAB_ID=table_id)
@@ -143,7 +162,10 @@ def load_dynamic_table_context(table_id):
 
     rows_data = []
     for row in rows:
-        row_values = []
+        row_values = {
+            'row_id': row.ROW_ID,  # Inclure l'ID de la ligne ici
+            'cells': []
+        }
         for column in columns:
             cell = Cell.objects.filter(COL_ID=column, ROW_ID=row).first()
             cell_value = cell.CEL_VALUE if cell else ""
@@ -167,7 +189,7 @@ def load_dynamic_table_context(table_id):
                         None
                     )
 
-            row_values.append(cell_data)
+            row_values['cells'].append(cell_data)
         rows_data.append(row_values)
 
     context = {
