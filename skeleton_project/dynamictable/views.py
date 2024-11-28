@@ -110,6 +110,10 @@ def add_column(request, table_id):
                 tag_color = request.POST.get(f"tag_color_{i}")
                 if tag_value and tag_value != "": # si la valeur du tag est renseignée
                     tag_options[tag_color] = tag_value # on associe la couleur à la valeur
+                    
+            # Si aucun tag valide n'est fourni, renvoyer une erreur
+            if not tag_options:
+                return JsonResponse({"success": False, "error_field": "type", "error": "Vous devez fournir au moins un tag avec une valeur."}, status=400)
 
         # ajout de la colonne (avec éventuellement les tags)
         table.add_column(col_name=col_name, typ_name=col_type, tag_options=tag_options)

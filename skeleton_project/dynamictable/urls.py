@@ -10,4 +10,5 @@ urlpatterns = [
     path('table/<int:table_id>/add_row/', views.add_row, name='add_row'),
     path('table/update_cellule/<int:cell_id>/', views.update_cell, name='update_cell'),
     path('table/<int:table_id>/update_column_order/', views.update_column_order, name='update_column_order'),
+    path('table/<int:table_id>/update_row_order/', views.update_row_order, name='update_row_order'),
 ]

@@ -28,9 +28,9 @@
                     <option value="Date">Date</option>
                     <option value="Tag">Tag</option>
                 </select>
-                <div id="error-type" class="uk-text-danger" style="display: none;"></div>
             </div>
             <div id="tag-fields" class="uk-margin" style="display: none;">
+                <div id="error-type" class="uk-text-danger" style="display: none;"></div>
                 <label class="uk-form-label">Tags</label>
                 <div id="tags-container">
                     <div class="tag-row" id="tag-1">
@@ -125,19 +125,33 @@
         tagCount = 1;
     });
 
+    // gestion du retour de HTMX en cas d'erreur (ici new_column)
     document.addEventListener("htmx:responseError", function(event) {
-            const response = event.detail.xhr.response;
-            const data = JSON.parse(response);
+        const response = event.detail.xhr.response;
+        const data = JSON.parse(response);
 
-            // Afficher les erreurs spécifiques aux champs
-            if (data.error_field && data.error) {
-                const errorField = document.getElementById(`error-${data.error_field}`);
-                if (errorField) {
-                    errorField.style.display = 'block';
-                    errorField.textContent = data.error;
-                }
+        // Afficher les erreurs spécifiques aux champs (nom colonne ou type de colonne)
+        if (data.error_field && data.error) {
+            console.log(`error-${data.error_field}`);
+            const errorField = document.getElementById(`error-${data.error_field}`);
+            if (errorField) {
+                errorField.style.display = 'block';
+                errorField.textContent = data.error;
             }
+        }
+    });
+
+    // réinitialiser uniquement pour le formulaire de "new_column" (pour cacher les anciennes erreurs)
+    document.getElementById('add-column-form').addEventListener("htmx:beforeRequest", function(event) {
+        // Réinitialiser les messages d'erreur spécifiques
+        const errorMessages = document.querySelectorAll('[id^="error-"]');
+        errorMessages.forEach(function(error) {
+            error.style.display = 'none';
+            error.textContent = '';
         });
+
+        console.log("Erreurs réinitialisées pour new_column.");
+    });
 
     function handleFormSuccess(event) {
         const xhr = event.detail.xhr;
