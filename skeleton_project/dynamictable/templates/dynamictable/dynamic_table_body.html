@@ -1,18 +1,28 @@
-<table class="table" id="table">
+<table class="table" id="table" data-table-id="{{ table_id }}">
     <thead>
         {% for col in columns %}
             <th style="height: 50px; position: relative; padding: 0;">
-                <div id="dropdown-{{ col.id_column }}" uk-toggle="target: #dropdown-{{ col.id_column }}-content" 
-                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                <div id="dropdown-{{ col.id_column }}" 
+                     uk-toggle="target: #dropdown-{{ col.id_column }}-content" 
+                     style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                     <p>{{ col.name }}</p>
                 </div>
-                <div id="dropdown-{{ col.id_column }}-content" class="uk-navbar-dropdown" uk-dropdown="boundary: !.uk-navbar; stretch: x; flip: false; mode: click;">
+                <div id="dropdown-{{ col.id_column }}-content" 
+                     class="uk-navbar-dropdown" 
+                     uk-dropdown="boundary: !.uk-navbar; stretch: x; flip: false; mode: click;">
                     <ul class="uk-dropdown-nav uk-nav">
-                        <li ><a href="#">Modifier</a></li>
+                        <li>
+                            <button class="bg-white border border-blue-500 py-1 px-3 rounded hover:bg-blue-100"
+                                    style="color: #3B82F6;" 
+                                    uk-toggle="target: #edit-column-modal"
+                                    onclick="openEditModal('{{ table_id }}', '{{ col.id_column }}', '{{ col.name }}', '{{ col.type }}')">
+                                Modifier
+                            </button>
+                        </li>
                         <li>
                             <button hx-get="{% url 'dynamictable:delete_column' table_id=table_id column_id=col.id_column %}" 
-                                hx-target="#table" 
-                                class="bg-red-500 text-red-custom p-2">
+                                    hx-target="#table" 
+                                    class="bg-red-500 text-red-custom p-2">
                                 Supprimer
                             </button>
                         </li>
@@ -20,48 +30,36 @@
                 </div>
             </th>
         {% endfor %}
-
-        <th><button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button></th>
+        <!-- Ne dupliquez pas le bouton d'ajout de colonne à chaque fois -->
+        <th>
+            <button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button>
+        </th>
     </thead>
     <tbody id="table-body">
         {% for row in rows %}
             <tr class="uk-visible-toggle" tabindex="-1">
-                
                 {% for cell in row.values %}
                     <td>
                         {% if cell.type == 'date' %}
-                            <input  type="date"
-                                    name="new_value"
-                                    value="{{ cell.value }}"
-                                    hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}"
-                                    hx-trigger="change"
-                                    class="border p-1">
+                            <input type="date" name="new_value" value="{{ cell.value }}"
+                                   hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}" hx-trigger="change" class="border p-1">
                         {% elif cell.type == 'integer' %}
-                            <input  type="number"
-                                    name="new_value"
-                                    value="{{ cell.value }}"
-                                    hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}"
-                                    hx-trigger="change"
-                                    class="border p-1">
+                            <input type="number" name="new_value" value="{{ cell.value }}"
+                                   hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}" hx-trigger="change" class="border p-1">
                         {% else %}
-                            <input  type="text"
-                                    name="new_value"
-                                    value="{{ cell.value }}"
-                                    hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}"
-                                    hx-trigger="change"
-                                    class="border p-1">
+                            <input type="text" name="new_value" value="{{ cell.value }}"
+                                   hx-post="{% url 'dynamictable:update_cell' cell.cel_id %}" hx-trigger="change" class="border p-1">
                         {% endif %}
                     </td>
                 {% endfor %}
-                <td class="uk-width-auto" style="width: 5%; height:50px;">
+                <td>
                     <ul class="uk-iconnav uk-hidden-hover">
                         <li>
                             <button hx-get="{% url 'dynamictable:delete_row' table_id=table_id row_id=row.ROW_ID %}" 
-                                hx-target="#table" 
-                                class="bg-red-500 text-red-custom ">
+                                    hx-target="#table" 
+                                    class="bg-red-500 text-red-custom">
                                 <span uk-icon="icon: trash; ratio:1"></span>
                             </button>
-                            
                         </li>
                     </ul>
                 </td>
@@ -76,3 +74,116 @@
         </tr>
     </tbody>
 </table>
+
+
+
+<!-- Modal pour modifier une colonne -->
+<div id="edit-column-modal" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Modifier la colonne</h2>
+        <form id="edit-column-form" hx-post="" hx-target="#table" hx-swap="outerHTML" hx-on="htmx:afterRequest">
+            {% csrf_token %}
+            <input type="hidden" name="column_id" id="edit-column-id">
+            <div class="uk-margin">
+                <label for="edit-column-name" class="uk-form-label">Nom de la colonne</label>
+                <input class="uk-input" type="text" name="column_name" id="edit-column-name" value="" required>
+            </div>
+            <div class="uk-margin">
+                <label for="edit-column-type" class="uk-form-label">Type de colonne</label>
+                <select class="uk-select" name="column_type" id="edit-column-type" value="" required>
+                    <option value="Texte">Texte</option>
+                    <option value="Nombre">Nombre</option>
+                    <option value="Date">Date</option>
+                </select>
+            </div>
+            <div class="uk-margin">
+                <button type="button" class="uk-button uk-button-default uk-modal-close">Annuler</button>
+                <button type="submit" class="uk-button uk-button-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Fonction pour ouvrir le modal d'édition
+    function openEditModal(tableId, columnId, columnName, columnType) {
+        console.log(`Opening edit modal for Table ID: ${tableId}, Column ID: ${columnId}, Name: ${columnName}, Type: ${columnType}`);
+
+        // Mettre à jour les champs du modal
+        document.getElementById('edit-column-id').value = columnId;
+        document.getElementById('edit-column-name').value = columnName;
+        console.log("Updated column name input value:", document.getElementById('edit-column-name').value);
+
+        const columnTypeSelect = document.getElementById('edit-column-type');
+
+        // Mapper le type de colonne au format attendu dans le menu déroulant
+        const typeMapping = {
+            'integer': 'Nombre',
+            'date': 'Date',
+            'text': 'Texte'
+        };
+        columnTypeSelect.value = typeMapping[columnType] || 'Texte';
+
+        // Construire dynamiquement l'URL pour la requête POST
+        const url = `/dynamictable/table/update_column/${tableId}/${columnId}/`;
+        console.log(`Generated URL: ${url}`);
+
+        // Mettre à jour l'attribut hx-post du formulaire
+        const form = document.getElementById('edit-column-form');
+        form.setAttribute('hx-post', url);
+
+        // Afficher le modal avec un délai pour s'assurer que tout est configuré
+        setTimeout(() => {
+            UIkit.modal('#edit-column-modal').show();
+        }, 50);
+    }
+
+    // Fonction pour soumettre le formulaire dynamiquement
+    document.getElementById('edit-column-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Empêcher la soumission par défaut du formulaire
+
+        const form = event.target;
+        const url = form.getAttribute('hx-post');
+        const formData = new FormData(form);
+
+        console.log("Submitting form to:", url, "with data:", Object.fromEntries(formData.entries()));
+
+        // Utiliser HTMX pour soumettre le formulaire avec les données
+        htmx.ajax('POST', url, {
+            target: form.getAttribute('hx-target'),
+            swap: form.getAttribute('hx-swap'),
+            values: Object.fromEntries(formData.entries()) // Convertir FormData en objet
+        });
+    });
+
+    // Fonction pour fermer tous les dropdowns
+    function closeDropdowns() {
+        document.querySelectorAll('.uk-navbar-dropdown').forEach(dropdown => {
+            if (dropdown.classList.contains('uk-open')) {
+                UIkit.dropdown(dropdown).hide(false);
+            }
+        });
+    }
+
+    // Ajouter un événement global pour fermer les dropdowns lors de l'ouverture d'un modal
+    document.addEventListener('show', function(e) {
+        if (e.target.matches('.uk-modal')) {
+            closeDropdowns(); // Ferme tous les dropdowns ouverts
+        }
+    });
+
+    // Fermer les dropdowns lorsque le modal spécifique est affiché
+    UIkit.util.on('#edit-column-modal', 'beforeshow', function() {
+        setTimeout(closeDropdowns, 100); // Ajouter un délai pour éviter les conflits visuels
+    });
+
+    // Empêcher l'interaction avec les dropdowns lorsqu'un modal est visible
+    document.addEventListener('click', function(e) {
+        const modal = document.querySelector('#edit-column-modal');
+        if (modal && modal.classList.contains('uk-open')) {
+            closeDropdowns(); // Fermer les dropdowns si un modal est ouvert
+        }
+    });
+
+</script>
+

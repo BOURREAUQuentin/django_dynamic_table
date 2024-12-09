@@ -2,45 +2,80 @@
     <h2>{{ name }}</h2>
     <p>{{ description }}</p>
     {% include "dynamictable/dynamic_table_body.html" %}
-
 </div>
 
 <!-- Modal pour ajouter une colonne -->
-<div class="uk-modal p-6" id="my-id" uk-modal>
-    <div class="uk-modal-body uk-modal-dialog">
-        <h2 class="uk-modal-title">Informations colonne</h2>
-        <form hx-post="{% url 'dynamictable:add_column' table_id %}"
-            hx-target="#table"  
-            hx-swap="outerHTML"
-            hx-on="htmx:afterRequest: closeModal()">
+<div id="my-id" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Ajouter une colonne</h2>
+        <form hx-post="{% url 'dynamictable:add_column' table_id %}" hx-target="#table" hx-swap="outerHTML" hx-on="htmx:afterRequest: closeModal()">
             {% csrf_token %}
             <div class="uk-margin">
-                <label class="uk-form-label" for="form-stacked-text">Nom de la colonne</label>
-                <input class="uk-input" type="text" name="name" placeholder="Nom de la colonne" required>
+                <label for="new-column-name">Nom de la colonne :</label>
+                <input id="new-column-name" name="name" class="uk-input" type="text" required>
             </div>
             <div class="uk-margin">
-                <label class="uk-form-label" for="form-stacked-select">Type de colonne</label>
-                <select class="uk-select" name="type" required>
+                <label for="new-column-type">Type de colonne :</label>
+                <select id="new-column-type" name="type" class="uk-select" required>
                     <option value="Texte">Texte</option>
                     <option value="Nombre">Nombre</option>
                     <option value="Date">Date</option>
                 </select>
             </div>
             <div class="uk-margin">
-                <p class="uk-text-right">
-                    <button class="uk-modal-close uk-button uk-button-default" type="button">Fermer</button>
-                    <button class="uk-button uk-button-primary" type="submit">Valider</button>
-                </p>
+                <button type="button" class="uk-button uk-button-default uk-modal-close">Fermer</button>
+                <button type="submit" class="uk-button uk-button-primary">Ajouter</button>
             </div>
         </form>
-
     </div>
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vérifier si UIkit est correctement chargé
+        if (typeof UIkit === 'undefined') {
+            console.error('UIkit n\'est pas chargé correctement');
+            return;
+        }
+
+        // Lors de l'ouverture du modal "Ajouter une colonne", fermer tous les dropdowns
+        UIkit.util.on('#my-id', 'beforeshow', function() {
+            document.querySelectorAll('.uk-navbar-dropdown').forEach(function(dropdown) {
+                // S'assurer que le dropdown est bien initialisé avant de tenter de le fermer
+                if (UIkit.dropdown(dropdown).isActive()) {
+                    UIkit.dropdown(dropdown).hide();
+                }
+            });
+        });
+
+        // Lorsque le modal est fermé, réafficher tous les dropdowns
+        UIkit.util.on('#my-id', 'hide', function() {
+            document.querySelectorAll('.uk-navbar-dropdown').forEach(function(dropdown) {
+                // Réinitialiser les dropdowns qui sont masqués ou fermés
+                UIkit.dropdown(dropdown).show();
+            });
+        });
+
+        // Fermeture des dropdowns sur les autres actions si nécessaire
+        document.addEventListener('click', function(event) {
+            if (UIkit.modal('#my-id').isActive()) {
+                // Fermer tous les dropdowns si un modal est actif
+                document.querySelectorAll('.uk-navbar-dropdown').forEach(function(dropdown) {
+                    UIkit.dropdown(dropdown).hide();
+                });
+            }
+        });
+    });
+
     function closeModal() {
-        setTimeout(function() {
-            UIkit.modal('#my-id').hide();
-        }, 300); // 300ms pour attendre la mise à jour du DOM
+        // Fermer le modal via UIkit
+        const modal = UIkit.modal('#my-id');
+        if (modal) {
+            modal.hide();
+        }
+        const modal_modif = UIkit.modal('#edit-column-modal');
+        if (modal_modif) {
+            modal_modif.hide();
+        }
     }
 </script>
