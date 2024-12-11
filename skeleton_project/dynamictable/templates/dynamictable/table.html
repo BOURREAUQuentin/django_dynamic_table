@@ -1,30 +1,44 @@
 <div id="dynamic-content">
     <h2>{{ name }}</h2>
     <p>{{ description }}</p>
+    <p>{{ table_id }}</p>
     {% include "dynamictable/dynamic_table_body.html" %}
-
 </div>
 
 <!-- Modal pour ajouter une colonne -->
-<div class="uk-modal p-6" id="my-id" uk-modal>
+<div class="uk-modal p-6" id="my-id-{{ table_id }}" uk-modal>
     <div class="uk-modal-body uk-modal-dialog">
         <h2 class="uk-modal-title">Informations colonne</h2>
-        <form hx-post="{% url 'dynamictable:add_column' table_id %}"
-            hx-target="#table"  
-            hx-swap="outerHTML"
-            hx-on="htmx:afterRequest: closeModal()">
+        <form id="add-column-form" 
+              hx-post="{% url 'dynamictable:add_column' table_id %}" 
+              hx-target="#table"
+              hx-swap="outerHTML"
+              hx-on="htmx:afterRequest: handleFormSuccess(event)">
             {% csrf_token %}
             <div class="uk-margin">
                 <label class="uk-form-label" for="form-stacked-text">Nom de la colonne</label>
-                <input class="uk-input" type="text" name="name" placeholder="Nom de la colonne" required>
+                <input id="column-name" class="uk-input" type="text" name="name" placeholder="Nom de la colonne" required>
+                <div id="error-name" class="uk-text-danger" style="display: none;"></div>
             </div>
             <div class="uk-margin">
                 <label class="uk-form-label" for="form-stacked-select">Type de colonne</label>
-                <select class="uk-select" name="type" required>
+                <select id="column-type" class="uk-select" name="type" required onchange="handleColumnTypeChange()">
                     <option value="Texte">Texte</option>
                     <option value="Nombre">Nombre</option>
                     <option value="Date">Date</option>
+                    <option value="Tag">Tag</option>
                 </select>
+            </div>
+            <div id="tag-fields" class="uk-margin" style="display: none;">
+                <div id="error-type" class="uk-text-danger" style="display: none;"></div>
+                <label class="uk-form-label">Tags</label>
+                <div id="tags-container">
+                    <div class="tag-row" id="tag-1">
+                        <input class="uk-input" type="text" name="tag_value_1" placeholder="Valeur du tag">
+                        <input class="uk-input" type="color" name="tag_color_1" value="#ff0000">
+                    </div>
+                </div>
+                <button type="button" class="uk-button uk-button-default" id="add-tag-btn" onclick="addTagField()">+ Ajouter un tag</button>
             </div>
             <div class="uk-margin">
                 <p class="uk-text-right">
@@ -33,14 +47,147 @@
                 </p>
             </div>
         </form>
-
     </div>
 </div>
 
 <script>
+    // ajout automatiquement le token CSRF à toutes les requêtes HTMX
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+        evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+
+    var tagCount = 1;  // Compteur pour les tags ajoutés
+
+    function handleColumnTypeChange() {
+        const columnType = document.getElementById('column-type').value;
+        const tagFields = document.getElementById('tag-fields');
+        
+        console.log(`changement nouveau type de colonne : ${columnType}`);
+        if (columnType === 'Tag') {
+            tagFields.style.display = 'block'; // Afficher les champs pour les tags
+        } else {
+            tagFields.style.display = 'none'; // Masquer les champs pour les tags
+        }
+    }
+
+    function addTagField() {
+        tagCount++;  // Incrémenter le compteur des tags
+
+        // Créer un nouveau div pour le nouveau tag
+        const newTagRow = document.createElement('div');
+        newTagRow.classList.add('tag-row');
+        newTagRow.id = `tag-${tagCount}`;
+
+        // Créer les champs d'entrée pour le tag
+        newTagRow.innerHTML = `
+            <input class="uk-input" type="text" name="tag_value_${tagCount}" placeholder="Valeur du tag">
+            <input class="uk-input" type="color" name="tag_color_${tagCount}" value="#ff0000">
+        `;
+
+        // Ajouter la nouvelle ligne de tag dans le container
+        const tagsContainer = document.getElementById('tags-container');
+        tagsContainer.appendChild(newTagRow);
+    }
+
+    UIkit.util.on('.uk-modal', 'hide', function () {
+        console.log("reset de la popup");
+        // Réinitialiser les champs du formulaire
+        const form = document.getElementById('add-column-form');
+        if (form) {
+            form.reset();
+        }
+
+        // Cacher les messages d'erreur
+        const errorMessages = document.querySelectorAll('[id^="error-"]');
+        errorMessages.forEach(function(error) {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+
+        // Cacher la section des tags et réinitialiser le container
+        const tagFields = document.getElementById('tag-fields');
+        if (tagFields) {
+            tagFields.style.display = 'none';
+        }
+        
+        // Réinitialiser le container des tags à son état initial
+        const tagsContainer = document.getElementById('tags-container');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = `
+                <div class="tag-row" id="tag-1">
+                    <input class="uk-input" type="text" name="tag_value_1" placeholder="Valeur du tag">
+                    <input class="uk-input" type="color" name="tag_color_1" value="#ff0000">
+                </div>
+            `;
+        }
+        
+        // Réinitialiser le compteur de tags
+        tagCount = 1;
+    });
+
+    // gestion du retour de HTMX en cas d'erreur (ici new_column)
+    document.addEventListener("htmx:responseError", function(event) {
+        const response = event.detail.xhr.response;
+        const data = JSON.parse(response);
+
+        // Afficher les erreurs spécifiques aux champs (nom colonne ou type de colonne)
+        if (data.error_field && data.error) {
+            console.log(`error-${data.error_field}`);
+            const errorField = document.getElementById(`error-${data.error_field}`);
+            if (errorField) {
+                errorField.style.display = 'block';
+                errorField.textContent = data.error;
+            }
+        }
+    });
+
+    // réinitialiser uniquement pour le formulaire de "new_column" (pour cacher les anciennes erreurs)
+    document.getElementById('add-column-form').addEventListener("htmx:beforeRequest", function(event) {
+        // Réinitialiser les messages d'erreur spécifiques
+        const errorMessages = document.querySelectorAll('[id^="error-"]');
+        errorMessages.forEach(function(error) {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+
+        console.log("Erreurs réinitialisées pour new_column.");
+    });
+
+    function handleFormSuccess(event) {
+        const xhr = event.detail.xhr;
+
+        // Vérifier si la réponse a un statut HTTP 2xx (succès)
+        if (xhr.status >= 200 && xhr.status < 300) {
+            closeModal(); // Fermer la popup si la soumission a réussi
+        }
+    }
+
     function closeModal() {
         setTimeout(function() {
-            UIkit.modal('#my-id').hide();
-        }, 300); // 300ms pour attendre la mise à jour du DOM
+            UIkit.modal('.uk-modal').hide();
+        }, 50); // 50ms pour attendre la mise à jour du DOM
+    }
+
+    /////////////////// fermeture des anciennes popup //////////////////////
+    UIkit.util.on('.uk-modal', 'beforeshow', function () {
+        const modal = this;
+        const currentTableId = modal.id.split('-').pop(); // Extraire le table_id de la modal en cours
+
+        cleanupModals(currentTableId); // Nettoyer les autres modales
+    });
+
+
+    function cleanupModals(currentTableId) {
+        // Sélectionne toutes les modales présentes dans le DOM
+        const modals = document.querySelectorAll('.uk-modal');
+
+        modals.forEach(modal => {
+            const tableId = modal.id.split('-').pop(); // Extraire le table_id de l'ID de la modal
+
+            // Supprimer la modal si elle ne correspond pas à l'ID actuel
+            if (tableId !== currentTableId) {
+                modal.remove(); // Retirer complètement du DOM
+            }
+        });
     }
 </script>

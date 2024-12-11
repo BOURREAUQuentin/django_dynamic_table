@@ -14,6 +14,7 @@
     
     <script src="https://unpkg.com/franken-ui@1.0.0/dist/js/core.iife.js" type="module"></script>
     <script src="https://unpkg.com/franken-ui@1.0.0/dist/js/icon.iife.js" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 
     <style>
         table {
@@ -28,7 +29,7 @@
             background-color: #f5f5f5;
         }
         th.movable {
-            cursor: move;
+            cursor:grab;
         }
         .add-button {
             margin: 10px 0;
@@ -39,13 +40,6 @@
             cursor: pointer;
         }
     </style>
-
-    <script>
-        // ajout automatiquement le token CSRF à toutes les requêtes HTMX
-        document.body.addEventListener('htmx:configRequest', function(evt) {
-            evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
-        });
-    </script>
 </head>
 <body>
     {% block content %}

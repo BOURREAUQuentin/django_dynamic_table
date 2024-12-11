@@ -57,6 +57,15 @@ class TypeData(models.Model):
 
     def __str__(self):
         return self.TYD_NAME
+    
+class TagOption(models.Model):
+    TAG_ID = models.AutoField(primary_key=True)
+    TAG_COLOR = models.CharField(max_length=50)  # Couleur en format hex ou nom
+    TAG_VALUE = models.CharField(max_length=100)  # Valeur associée
+    COL_ID = models.ForeignKey('Column', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.TAG_VALUE} ({self.TAG_COLOR})"
 
 class DynamicTable(models.Model):
     TAB_ID = models.AutoField(primary_key=True)
@@ -64,7 +73,7 @@ class DynamicTable(models.Model):
     TAB_DESCRIPTION = models.TextField()
     SUP_ID = models.ForeignKey(Support, on_delete=models.CASCADE)
 
-    def add_column(self, col_name, typ_name):
+    def add_column(self, col_name, typ_name, tag_options=None):
         # récupère l'ordre de la dernière colonne
         last_col = Column.objects.filter(TAB_ID=self).order_by('-COL_ORDER').first()
         new_col_order = last_col.COL_ORDER + 1 if last_col else 1
@@ -76,6 +85,15 @@ class DynamicTable(models.Model):
             TAB_ID=self,
             TYD_ID=TypeData.objects.filter(TYD_NAME=typ_name).first()
         )
+        
+        # si c'est une colonne de type Tag, ajoute les options
+        if typ_name == "Tag" and tag_options:
+            for color, value in tag_options.items():
+                TagOption.objects.create(
+                    TAG_COLOR=color,
+                    TAG_VALUE=value,
+                    COL_ID=new_column
+                )
 
         # crée une nouvelle cellule pour chaque ligne existante
         rows = Row.objects.filter(TAB_ID=self)
@@ -88,7 +106,7 @@ class DynamicTable(models.Model):
 
         return new_column
 
-    def add_default_row(self):
+    def add_row(self):
         # récupère l'ordre de la dernière ligne
         last_row = Row.objects.filter(TAB_ID=self).order_by('-ROW_ORDER').first()
         new_row_order = last_row.ROW_ORDER + 1 if last_row else 1
@@ -103,18 +121,6 @@ class DynamicTable(models.Model):
         # crée une nouvelle cellule pour chaque colonne
         columns = Column.objects.filter(TAB_ID=self)
         for column in columns:
-            # # Détermine la valeur par défaut en fonction du type de données
-            # if column.TYD_ID.TYD_FORMAT == "string":
-            #     default_value = ""
-            # elif column.TYD_ID.TYD_FORMAT == "integer":
-            #     default_value = "0"
-            # elif column.TYD_ID.TYD_FORMAT == "float":
-            #     default_value = "0.0"
-            # elif column.TYD_ID.TYD_FORMAT == "date":
-            #     default_value = "1970-01-01"  # ou utilisez `None` pour vide si cela est acceptable
-            # else:
-            #     default_value = ""  # Valeur par défaut si le type n'est pas reconnu
-
             Cell.objects.create(
                 CEL_VALUE="",
                 COL_ID=column,

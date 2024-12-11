@@ -1,16 +1,45 @@
-<table class="table" id="table">
+<table class="table" id="table" data-table-id="{{ table_id }}">
     <thead>
-        {% for col in columns %}
-            <th>{{ col.name }}</th>
-        {% endfor %}
-        <th><button uk-toggle="target: #my-id" class="bg-blue-500 text-white p-2">+</button></th>
+        <tr id="table-header">
+            {% for col in columns %}
+                <th class="movable" data-column-id="{{ col.id }}">{{ col.name }}</th>
+            {% endfor %}
+            <th>
+                <button uk-toggle="target: #my-id-{{ table_id }}" class="bg-blue-500 text-white p-2">+</button>
+            </th>
+        </tr>
     </thead>
     <tbody id="table-body">
         {% for row in rows %}
-            <tr>
-                {% for cell in row %}
+            <tr data-row-id="{{ row.row_id }}">
+                {% for cell in row.cells %}
                     <td>
-                        {% if cell.type == 'date' %}
+                        {% if cell.type == 'tag' %}
+                        <div class="relative">
+                            <select 
+                                id="tag-select-{{ cell.cel_id }}" 
+                                style="background-color: {{ cell.tag_color }}; color: white;"
+                                onchange="updateTagColor(this, {{ cell.cel_id }})"
+                                class="border p-2 rounded">
+                                
+                                <!-- option "Sélectionner" si aucun tag n'est sélectionné par défaut -->
+                                {% if not cell.value %}
+                                    <option disabled value="" selected style="background-color: #f5f5f5; color: black;">
+                                        Sélectionner
+                                    </option>
+                                {% endif %}
+
+                                {% for tag_option in cell.tag_options %}
+                                    <option 
+                                        value="{{ tag_option.value }}" 
+                                        style="background-color: {{ tag_option.color }}; color: white;"
+                                        {% if cell.value == tag_option.value %}selected{% endif %}>
+                                        {{ tag_option.value }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% elif cell.type == 'date' %}
                             <input  type="date"
                                     name="new_value"
                                     value="{{ cell.value }}"
@@ -36,12 +65,215 @@
                 {% endfor %}
             </tr>
         {% endfor %}
-        <tr>
+        <tr class="no-sort">
             <td>
-                <button hx-get="{% url 'dynamictable:add_row' table_id %}" 
-                        hx-target="#dynamic-content" 
-                        class="bg-blue-500 text-white p-2">+</button>
+                <button hx-get="{% url 'dynamictable:add_row' table_id %}" hx-target="#table" class="bg-blue-500 text-white p-2">+</button>
             </td>
         </tr>
     </tbody>
 </table>
+
+<script>
+    function updateTagColor(selectElement, cellId) {
+        // récupère la couleur de l'option sélectionnée
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const backgroundColor = selectedOption.style.backgroundColor;
+    
+        // applique la couleur de fond au champ sélectionné
+        selectElement.style.backgroundColor = backgroundColor;
+
+        // envoi de la requête POST pour mettre à jour la base de données
+        const newValue = selectElement.value; // récupère la nouvelle valeur du tag
+        fetch(`dynamictable/table/update_cellule/${cellId}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCsrfToken() // Fonction pour récupérer le token CSRF
+            },
+            body: `new_value=${encodeURIComponent(newValue)}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP ${response.status}`);
+            }
+    
+            return response.json(); // conversion du flux de la réponse en JSON
+        })
+        .then(data => {
+            if (data.status === "success") {
+                console.log("Cellule mise à jour :", data.new_value); // récupération de new_value
+            } else {
+                console.error("Erreur :", data.message); // affichage du message d'erreur
+            }
+        })
+        .catch(error => console.error("Erreur de requête :", error));
+    }
+
+    // Fonction pour récupérer le token CSRF depuis les cookies
+    function getCsrfToken() {
+        const csrfCookie = document.cookie
+            .split("; ")
+            .find(row => row.startsWith("csrftoken="));
+        return csrfCookie ? csrfCookie.split("=")[1] : "";
+    }
+
+    // charge le sortable dès que le htmx est load (la page a fini de charger)
+    document.body.addEventListener("htmx:load", function () {
+        
+        let tableElement = document.getElementById("table");
+        let header = document.getElementById("table-header");
+        let tableBody = document.getElementById("table-body");
+        const tableId = tableElement.dataset.tableId;
+
+        // sortable pour les colonnes
+        Sortable.create(header, {
+            animation: 100,
+            swapThreshold: 0.5,
+            onEnd: (event) => {
+                let fromIndex = event.oldIndex;
+                let toIndex = event.newIndex;
+
+                if (fromIndex !== toIndex) {
+                    console.log(`Colonne déplacée de ${fromIndex} à ${toIndex} pour le tableau ${tableId}`);
+
+                    // Récupère l'ordre actuel des IDs des colonnes
+                    const columnIds = Array.from(header.children)
+                        .filter((th) => th.dataset.columnId)
+                        .map((th) => th.dataset.columnId);
+
+                    console.log("Nouvel ordre des colonnes :", columnIds);
+
+                    // Envoyer les données à la base de données
+                    saveColumnOrder(tableId, columnIds)
+                        .then((updatedColumns) => {
+                            // Met à jour les IDs des colonnes dans le DOM
+                            updateColumnIds(updatedColumns);
+                        })
+                        .catch((error) => console.error("Erreur de mise à jour :", error));
+
+                    updateColumnOrder(fromIndex, toIndex);
+                }
+            },
+        });
+
+        // sortable pour les lignes
+        Sortable.create(tableBody, {
+            animation: 150,
+            filter: ".no-sort", // Empêche le tri des éléments ayant cette classe
+            onEnd: (event) => {
+                let fromIndex = event.oldIndex;
+                let toIndex = event.newIndex;
+
+                // Ignore les mouvements impliquant la ligne "no-sort"
+                const targetRow = tableBody.children[toIndex];
+                const isAddRow = targetRow && targetRow.querySelector('button'); // Vérifie si la ligne contient un bouton
+
+                console.log(targetRow);
+                if (isAddRow) {
+                    console.log("Impossible de déplacer une ligne vers la ligne contenant le bouton '+'");
+                    return; // Ne rien faire si la cible est la ligne avec le bouton "+"
+                }
+
+                if (fromIndex !== toIndex) {
+                    console.log(`Ligne déplacée de ${fromIndex} à ${toIndex} pour le tableau ${tableId}`);
+
+                    // Récupère l'ordre actuel des IDs des lignes
+                    const rowIds = Array.from(tableBody.children)
+                        .filter((row) => row.dataset.rowId)
+                        .map((row) => row.dataset.rowId);
+
+                    console.log("Nouvel ordre des lignes :", rowIds);
+
+                    // Envoyer les données à la base de données
+                    saveRowOrder(tableId, rowIds)
+                        .then((updatedRows) => {
+                            console.log("Ordre des lignes mis à jour avec succès.");
+                        })
+                        .catch((error) => console.error("Erreur de mise à jour :", error));
+                }
+            },
+        });
+
+        function updateColumnOrder(fromIndex, toIndex) {
+            // Parcourt toutes les lignes et réorganise les cellules
+            Array.from(tableBody.rows).forEach((row) => {
+                let cells = Array.from(row.children); // Récupère les cellules (td)
+                if (cells[fromIndex] && cells[toIndex]) {
+                    let movedCell = cells.splice(fromIndex, 1)[0]; // Retire la cellule déplacée
+                    cells.splice(toIndex, 0, movedCell); // Insère la cellule à la nouvelle position
+
+                    // Supprime toutes les cellules actuelles et les réinsère dans le nouvel ordre
+                    while (row.firstChild) {
+                        row.removeChild(row.firstChild); // Nettoie les cellules existantes
+                    }
+                    cells.forEach(cell => {
+                        if (cell instanceof HTMLElement) {
+                            row.appendChild(cell); // Ajoute les cellules réorganisées
+                        }
+                    });
+                }
+            });
+        }
+
+        function saveColumnOrder(tableId, columnIds) {
+            return fetch(`dynamictable/table/${tableId}/update_column_order/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: `column_order=${columnIds.join(",")}`,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.status === "success") {
+                        return data.columns; // Retourne les colonnes mises à jour
+                    } else {
+                        throw new Error(data.message || "Erreur inconnue");
+                    }
+                });
+        }
+
+        function updateColumnIds(columns) {
+            // Met à jour les data-column-id dans le DOM
+            columns.forEach((index, column) => {
+                const th = header.children[index];
+                if (th) {
+                    th.dataset.columnId = column.id;
+                    th.textContent = column.name; // Facultatif : si vous souhaitez mettre à jour le nom
+                }
+            });
+
+            console.log("IDs des colonnes mis à jour :", columns.map((col) => col.id));
+        }
+
+        function saveRowOrder(tableId, rowIds) {
+            return fetch(`dynamictable/table/${tableId}/update_row_order/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: `row_order=${rowIds.join(",")}`,
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    if (data.status === "success") {
+                        return data.rows; // Retourne les lignes mises à jour
+                    } else {
+                        throw new Error(data.message || "Erreur inconnue");
+                    }
+                });
+        }
+    });
+</script>
