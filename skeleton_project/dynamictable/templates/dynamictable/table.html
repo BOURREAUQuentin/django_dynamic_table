@@ -1,11 +1,12 @@
-<div id="dynamic-content">
+<!-- Tableau dynamique -->
+<div id="dynamic-table">
     <h2>{{ name }}</h2>
     <p>{{ description }}</p>
     {% include "dynamictable/dynamic_table_body.html" %}
 </div>
 
-<!-- Modal pour ajouter une colonne -->
-<div id="my-id" class="uk-modal" uk-modal>
+
+<div id="my-id" class="uk-modal-{{ table_id }}" uk-modal>
     <div class="uk-modal-dialog uk-modal-body">
         <h2 class="uk-modal-title">Ajouter une colonne</h2>
         <form hx-post="{% url 'dynamictable:add_column' table_id %}" hx-target="#table" hx-swap="outerHTML" hx-on="htmx:afterRequest: closeModal()">
@@ -25,6 +26,32 @@
             <div class="uk-margin">
                 <button type="button" class="uk-button uk-button-default uk-modal-close">Fermer</button>
                 <button type="submit" class="uk-button uk-button-primary">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="edit-column-modal" class="uk-modal-{{ table_id }}" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Modifier la colonne</h2>
+        <form id="edit-column-form" hx-post="" hx-target="#table-body" hx-swap="outerHTML" hx-on="htmx:afterRequest">
+            {% csrf_token %}
+            <input type="hidden" name="column_id" id="edit-column-id">
+            <div class="uk-margin">
+                <label for="edit-column-name" class="uk-form-label">Nom de la colonne</label>
+                <input class="uk-input" type="text" name="column_name" id="edit-column-name" value="" required>
+            </div>
+            <div class="uk-margin">
+                <label for="edit-column-type" class="uk-form-label">Type de colonne</label>
+                <select class="uk-select" name="column_type" id="edit-column-type" value="" required>
+                    <option value="Texte">Texte</option>
+                    <option value="Nombre">Nombre</option>
+                    <option value="Date">Date</option>
+                </select>
+            </div>
+            <div class="uk-margin">
+                <button type="button" class="uk-button uk-button-default uk-modal-close">Annuler</button>
+                <button type="submit" class="uk-button uk-button-primary">Enregistrer</button>
             </div>
         </form>
     </div>
@@ -68,14 +95,106 @@
     });
 
     function closeModal() {
-        // Fermer le modal via UIkit
-        const modal = UIkit.modal('#my-id');
-        if (modal) {
-            modal.hide();
-        }
-        const modal_modif = UIkit.modal('#edit-column-modal');
-        if (modal_modif) {
-            modal_modif.hide();
-        }
+    // Fermer uniquement le modal actuellement actif
+    const modalAdd = UIkit.modal('#my-id');
+    const modalEdit = UIkit.modal('#edit-column-modal');
+
+    if (modalAdd && modalAdd.isActive()) {
+        modalAdd.hide(true);
     }
+
+    if (modalEdit && modalEdit.isActive()) {
+        modalEdit.hide(true);
+    }
+
+    // Réinitialiser les formulaires
+    document.getElementById('new-column-name').value = '';
+    document.getElementById('new-column-type').selectedIndex = 0;
+}
+
+
+// Fonction pour ouvrir le modal d'édition
+function openEditModal(tableId, columnId, columnName, columnType) {
+    // Vérification des données
+    console.log(`Opening edit modal for Table ID: ${tableId}, Column ID: ${columnId}, Name: ${columnName}, Type: ${columnType}`);
+
+    // Mettre à jour les champs du modal
+    document.getElementById('edit-column-id').value = columnId;
+    document.getElementById('edit-column-name').value = columnName;
+
+    const columnTypeSelect = document.getElementById('edit-column-type');
+    const typeMapping = {
+        'integer': 'Nombre',
+        'date': 'Date',
+        'text': 'Texte'
+    };
+    columnTypeSelect.value = typeMapping[columnType] || 'Texte';
+
+    // Construire dynamiquement l'URL pour la requête POST
+    const url = `/dynamictable/table/update_column/${tableId}/${columnId}/`;
+    console.log(`Generated URL: ${url}`);
+
+    // Mettre à jour l'attribut hx-post du formulaire
+    const form = document.getElementById('edit-column-form');
+    form.setAttribute('hx-post', url);
+
+    // Afficher le modal avec un délai pour s'assurer que tout est configuré
+    setTimeout(() => {
+        UIkit.modal('#edit-column-modal').show();
+    }, 50);
+}
+
+
+    // Fonction pour soumettre le formulaire dynamiquement
+    document.getElementById('edit-column-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const url = form.getAttribute('hx-post');
+        const formData = new FormData(form);
+
+        htmx.ajax('POST', url, {
+            target: '#table-body', // Ciblez spécifiquement le corps du tableau
+            swap: 'innerHTML',
+            values: Object.fromEntries(formData.entries())
+        });
+
+        // Fermer le modal
+        const modal = UIkit.modal('#edit-column-modal');
+        if (modal) {
+            modal.hide(true);
+        }
+    });
+    
+
+    UIkit.util.on('.uk-modal', 'beforeshow', function () {
+        const modal = this;
+        const currentTableId = modal.id.split('-').pop(); // Extraire le table_id de la modal en cours
+        console.log(`Current table ID: ${currentTableId}`);
+        cleanupModals(currentTableId); // Nettoyer les autres modales
+    });
+
+    function cleanupModals(currentTableId) {
+        // Sélectionne toutes les modales présentes dans le DOM
+        const modals = document.querySelectorAll('.uk-modal');
+
+        modals.forEach(modal => {
+            if (modal.id !== currentModalId && modal.id.split('-').pop() !== currentTableId) {
+                UIkit.modal(modal).hide(true);
+                UIkit.util.on(modal, 'hidden', function () {
+                    console.log(`Cleaning up modal: ${modal.id}`);
+                    modal.remove();
+                });
+            }
+        });
+    }
+
+    
+    
+
+    
+
+
+    
+    
 </script>

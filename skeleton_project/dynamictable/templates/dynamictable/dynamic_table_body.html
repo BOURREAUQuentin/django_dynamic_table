@@ -77,84 +77,9 @@
 
 
 
-<!-- Modal pour modifier une colonne -->
-<div id="edit-column-modal" class="uk-modal" uk-modal>
-    <div class="uk-modal-dialog uk-modal-body">
-        <h2 class="uk-modal-title">Modifier la colonne</h2>
-        <form id="edit-column-form" hx-post="" hx-target="#table" hx-swap="outerHTML" hx-on="htmx:afterRequest">
-            {% csrf_token %}
-            <input type="hidden" name="column_id" id="edit-column-id">
-            <div class="uk-margin">
-                <label for="edit-column-name" class="uk-form-label">Nom de la colonne</label>
-                <input class="uk-input" type="text" name="column_name" id="edit-column-name" value="" required>
-            </div>
-            <div class="uk-margin">
-                <label for="edit-column-type" class="uk-form-label">Type de colonne</label>
-                <select class="uk-select" name="column_type" id="edit-column-type" value="" required>
-                    <option value="Texte">Texte</option>
-                    <option value="Nombre">Nombre</option>
-                    <option value="Date">Date</option>
-                </select>
-            </div>
-            <div class="uk-margin">
-                <button type="button" class="uk-button uk-button-default uk-modal-close">Annuler</button>
-                <button type="submit" class="uk-button uk-button-primary">Enregistrer</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <script>
-    // Fonction pour ouvrir le modal d'édition
-    function openEditModal(tableId, columnId, columnName, columnType) {
-        console.log(`Opening edit modal for Table ID: ${tableId}, Column ID: ${columnId}, Name: ${columnName}, Type: ${columnType}`);
-
-        // Mettre à jour les champs du modal
-        document.getElementById('edit-column-id').value = columnId;
-        document.getElementById('edit-column-name').value = columnName;
-        console.log("Updated column name input value:", document.getElementById('edit-column-name').value);
-
-        const columnTypeSelect = document.getElementById('edit-column-type');
-
-        // Mapper le type de colonne au format attendu dans le menu déroulant
-        const typeMapping = {
-            'integer': 'Nombre',
-            'date': 'Date',
-            'text': 'Texte'
-        };
-        columnTypeSelect.value = typeMapping[columnType] || 'Texte';
-
-        // Construire dynamiquement l'URL pour la requête POST
-        const url = `/dynamictable/table/update_column/${tableId}/${columnId}/`;
-        console.log(`Generated URL: ${url}`);
-
-        // Mettre à jour l'attribut hx-post du formulaire
-        const form = document.getElementById('edit-column-form');
-        form.setAttribute('hx-post', url);
-
-        // Afficher le modal avec un délai pour s'assurer que tout est configuré
-        setTimeout(() => {
-            UIkit.modal('#edit-column-modal').show();
-        }, 50);
-    }
-
-    // Fonction pour soumettre le formulaire dynamiquement
-    document.getElementById('edit-column-form').addEventListener('submit', function(event) {
-        event.preventDefault(); // Empêcher la soumission par défaut du formulaire
-
-        const form = event.target;
-        const url = form.getAttribute('hx-post');
-        const formData = new FormData(form);
-
-        console.log("Submitting form to:", url, "with data:", Object.fromEntries(formData.entries()));
-
-        // Utiliser HTMX pour soumettre le formulaire avec les données
-        htmx.ajax('POST', url, {
-            target: form.getAttribute('hx-target'),
-            swap: form.getAttribute('hx-swap'),
-            values: Object.fromEntries(formData.entries()) // Convertir FormData en objet
-        });
-    });
+    
 
     // Fonction pour fermer tous les dropdowns
     function closeDropdowns() {

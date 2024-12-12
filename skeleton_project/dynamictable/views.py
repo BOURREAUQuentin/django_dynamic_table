@@ -185,32 +185,38 @@ def update_column(request, table_id, column_id):
             # Récupérer les données POST
             column_name = request.POST.get("column_name")
             column_type = request.POST.get("column_type")
-
             # Valider que les champs nécessaires sont présents
             if not column_name or not column_type:
                 return JsonResponse({"status": "error", "message": "Missing column_name or column_type"}, status=400)
 
             # Vérifier si la colonne existe
-            column = Column.objects.filter(COL_ID=column_id, TAB_ID=table_id).first()
-            if not column:
-                return JsonResponse({"status": "error", "message": "Column not found"}, status=404)
+            column = get_object_or_404(Column, COL_ID=column_id, TAB_ID=table_id)
 
             # Vérifier si le type de données est valide
-            type_data = TypeData.objects.filter(TYD_NAME=column_type).first()
+            type_mapping = {
+                'Texte': 'string',
+                'Nombre': 'integer',
+                'Date': 'date'
+            }
+            tyd_format = type_mapping.get(column_type)
+            type_data = TypeData.objects.filter(TYD_FORMAT=tyd_format).first()
             if not type_data:
                 return JsonResponse({"status": "error", "message": f"Invalid column type: {column_type}"}, status=400)
+
+            if column.TYD_ID.TYD_FORMAT != tyd_format:
+                Cell.objects.filter(COL_ID=column_id).update(CEL_VALUE="")
 
             # Mettre à jour la colonne
             column.COL_NAME = column_name
             column.TYD_ID = type_data
             column.save()
 
-            # Réponse de succès
+            # Plutôt que de renvoyer tout le template, renvoyez uniquement le corps du tableau
             context = load_dynamic_table_context(table_id)
             return render(request, 'dynamictable/dynamic_table_body.html', context)
 
         except Exception as e:
+            logging.error(f"Error updating column: {str(e)}")
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-    # Réponse pour une méthode non autorisée
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)

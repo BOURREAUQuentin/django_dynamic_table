@@ -2,6 +2,7 @@
 
 {% block content %}
     <h1>Bienvenue sur l'application de tableau dynamique</h1>
-    <button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" hx-swap="outerHTML" class="bg-blue-500 text-white p-2">Afficher le tableau</button>
+    <button hx-get="{% url 'dynamictable:dynamictable' 1 %}" hx-target="#dynamic-content" hx-swap="outerHTML" class="bg-blue-500 text-white p-2" >Afficher le tableau</button>
     <div id="dynamic-content"></div>
+    
 {% endblock %}
